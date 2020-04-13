@@ -127,6 +127,7 @@ function setDefaultVoice(guildID, voiceChannelID) {
 }
 client.on('channelCreate', channel => {
 	if (channel.guild.id != "617189159345586215") return;
+
 	let roles = channel.guild.roles.cache;
 	let roleStaff = null;
 	let roleSpecial = null;
@@ -182,7 +183,10 @@ client.on('message', message => {
 					message.channel.send('Your ID is: ' + message.author.id)
 					break;
 				case 'getChannelId':
-					message.channel.send(`This channel ID is ${message.channel.id}! ~`)
+					message.channel.send(`This channel ID is ${message.channel.id}! ~`);
+					break;
+				case 'getParentId':
+					message.channel.send(`This channel ParentID is ${message.channel.parentID}! ~`);
 					break;
 				case 'getVoiceChannelId':
 					message.channel.send(`This voice channel ID is ${message.member.voice.channelID}`)
