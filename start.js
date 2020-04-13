@@ -32,6 +32,9 @@ Format:
 2. Waktu Kejadian:
 3. Tempat Kejadian:
 4. Kronologis Kejadian:
+5. Barang yang Hilang: 
+
+Sertakan SS bila ada, screenshot akan meningkatkan kemungkinan barangmu direfund dengan utuh, dan akan menjadi prioritas.
 `
 const embed = new MessageEmbed()
 	// Set the title of the field
@@ -127,7 +130,7 @@ function setDefaultVoice(guildID, voiceChannelID) {
 }
 client.on('channelCreate', channel => {
 	if (channel.guild.id != "617189159345586215") return;
-
+	if (channel.parentID != "618825049608028160") return;
 	let roles = channel.guild.roles.cache;
 	let roleStaff = null;
 	let roleSpecial = null;
