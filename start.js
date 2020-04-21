@@ -34,6 +34,23 @@ Format:
 4. Kronologis Kejadian:
 5. Barang yang Hilang: 
 
+Untuk barang hilang yang memiliki enchant, silakan tulis dengan format seperti ini.
+(Untuk enchant biasa pakai underscore, untuk custom enchant tanpa spasi)
+\`\`\`
+Contoh:
+
+diamond_helmet
+aqua_affinity 1
+protection 4
+blast_protection 3
+dst.
+customenchant:
+wildmark 1
+cactus 3
+planetarydeathbringer 1
+dst.
+\`\`\`
+
 Sertakan SS bila ada, screenshot akan meningkatkan kemungkinan barangmu direfund dengan utuh, dan akan menjadi prioritas.
 `
 const embed = new MessageEmbed()
