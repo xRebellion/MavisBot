@@ -6,6 +6,8 @@ const pathToRegistered = './data/registered.json'
 var registered = require(pathToRegistered)
 var music = require('./modules/music.js')
 var message = require('./data/messages')
+var roles = require('./modules/roles');
+const { initRoleMessage, initRole } = require('./modules/roles');
 const prefix = 'm/';
 
 
@@ -26,7 +28,7 @@ logger.add(new logger.transports.Console, {
 });
 logger.level = 'debug';
 // Initialize Discord client
-var client = new Client()
+var client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
 client.on('ready', () => {
 	client.user.setPresence({ activity: { name: 'm/help', type: 'LISTENING' } });
 	logger.info('Ready!~');
@@ -46,6 +48,8 @@ client.on('message', message => {
 		addReaction(message);
 	}
 });
+client.on('messageReactionAdd', roles.onReactEmoji);
+client.on('messageReactionRemove', roles.onDisreactEmoji);
 
 
 
@@ -154,7 +158,14 @@ client.on('message', message => {
 				case 'reactall':
 					reactToAllMessage(message.channel)
 					break;
-
+				case 'initRoleMessage':
+					roles.initRoleMessage(message.guild.id, args[0]);
+					console.log(args[1]);
+					break;
+				case 'initRole':
+					roles.initRole(message.guild.id, args[0]);
+					console.log(args[1]);
+					break;
 				case 'getid':
 					message.channel.send('Your ID is: ' + message.author.id)
 					break;
