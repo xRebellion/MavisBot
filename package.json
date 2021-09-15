@@ -9,12 +9,12 @@
   "author": "Rebellion a.k.a. Daniel Y",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "^0.1.0",
+    "@discordjs/opus": "^0.6.0",
     "axios": "^0.21.2",
     "discord.js": "^12.1.1",
     "ffmpeg": "0.0.4",
     "ffmpeg-static": "^4.1.0",
     "winston": "^3.3.3",
-    "ytdl-core": "^2.0.1"
+    "ytdl-core": "^4.9.1"
   }
 }
