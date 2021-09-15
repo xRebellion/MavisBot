@@ -1,11 +1,12 @@
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const auth = require('../data/auth.json');
-const registered = require('../data/registered.json');
+const registered = require('../data/deprecated/registered.deprecated.json');
 const client = new Discord.Client();
 const axios = require('axios').default;
 const queue = new Map();
 const youtubeAPIURL = "https://www.googleapis.com/youtube/v3/search"
+const msgs = require('../data/messages.js')
 
 function delay(t, v) {
     return new Promise(function (resolve) {
@@ -16,25 +17,23 @@ function delay(t, v) {
 async function execute(message, serverQueue) {
     const args = message.content.split(' ');
 
-
     const voiceChannel = message.member.voice.channel;
-
 
     if (!voiceChannel) {
         const defaultVoiceChannel = await client.channels.fetch(registered.default_voice_channels[message.guild.id]);
         const permissions = defaultVoiceChannel.permissionsFor(message.client.user);
         if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
-            return message.channel.send('Ah~ I don\'t have permission to connect or speak ;~;');
+            return message.channel.send(defaultMessage.NO_MUSIC_PERMISSION);
         }
         defaultVoiceChannel.join();
         return delay(5000).then(() => {
-            message.channel.send('Wait a second... I can\'t find you in the room ._. I\'m leaving then~');
+            message.channel.send(msgs.MUSIC_NO_ONE_IN_THE_ROOM);
             return defaultVoiceChannel.leave()
         })
     }
     const permissions = voiceChannel.permissionsFor(message.client.user);
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
-        return message.channel.send('Ah~ I don\'t have permission to connect or speak ;~;');
+        return message.channel.send(defaultMessage.NO_MUSIC_PERMISSION);
     }
     const params = {
         part: "id",
@@ -54,8 +53,8 @@ async function execute(message, serverQueue) {
 
     const songInfo = await ytdl.getInfo(response.data.items[0].id.videoId);
     const song = {
-        title: songInfo.title,
-        url: songInfo.video_url,
+        title: songInfo.videoDetails.title,
+        url: songInfo.videoDetails.video_url,
     };
 
     if (!serverQueue) {
@@ -86,13 +85,11 @@ async function execute(message, serverQueue) {
         console.log(serverQueue.songs);
         return message.channel.send(`I've queued **${song.title}** for you! ~`).then();
     }
-
-
 }
 
 function skip(message, serverQueue) {
-    if (!serverQueue) return message.channel.send(`What are you trying to do? I'm not playing any songs ~ 'w'`);
-    if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send('Wait a sec... You\'re not in the voice channel I\'m in ~_~');
+    if (!serverQueue) return message.channel.send(msgs.MUSIC_SKIP);
+    if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send(MUSIC_WRONG_VOICE_CHANNEL);
     message.channel.send(`Skipping ${serverQueue.songs[0].title}...`)
     serverQueue.connection.dispatcher.end();
 
@@ -100,7 +97,7 @@ function skip(message, serverQueue) {
 
 function leave(message, serverQueue) {
     if (!serverQueue) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
-    if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send('Wait a sec... You\'re not in the voice channel I\'m in ~_~');
+    if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
     serverQueue.songs = [];
     message.channel.send(`Alright... I'm heading out now ~`)
     if (serverQueue.connection.dispatcher != null) serverQueue.connection.dispatcher.end();
@@ -133,8 +130,6 @@ function play(guild, song) {
         });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 }
-
-client.login(auth.token);
 
 module.exports = {
     queue: queue,
