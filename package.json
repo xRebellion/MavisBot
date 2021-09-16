@@ -9,13 +9,14 @@
   "author": "Rebellion a.k.a. Daniel Y",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "^0.6.0",
     "@discordjs/voice": "^0.6.0",
     "axios": "^0.21.2",
-    "discord.js": "^12.1.1",
+    "discord.js": "^13.1.0",
     "ffmpeg": "0.0.4",
     "ffmpeg-static": "^4.1.0",
+    "tweetnacl": "^1.0.3",
     "winston": "^3.3.3",
+    "youtube-dl-exec": "^1.2.6",
     "ytdl-core": "^4.9.1"
   }
 }

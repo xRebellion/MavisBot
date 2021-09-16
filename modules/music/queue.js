@@ -34,6 +34,20 @@ class MusicQueue {
         }
     }
 
+    empty() {
+        this.songs = [];
+        this.nowPlaying = null;
+    }
+
+    shift() {
+        this.nowPlaying = this.songs.shift()
+        return this.nowPlaying
+    }
+
+    isEmpty() {
+        return this.nowPlaying == null
+    }
+
 }
 
 module.exports = MusicQueue

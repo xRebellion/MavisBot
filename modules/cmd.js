@@ -1,5 +1,5 @@
 var { MessageEmbed } = require('discord.js');
-var music = require('./music/main.js')
+var music = require('./music/main.js').default
 var fun = require('./fun.js')
 const msgs = require('../data/messages.js')
 const prefix = 'm/';
@@ -65,6 +65,9 @@ function processCmd(message) {
                 break;
             case 'leave':
                 music.leave(message);
+                break;
+            case 'q':
+                music.viewQueue(message);
                 break;
             case 'help':
                 message.channel.send(embed)

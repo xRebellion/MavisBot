@@ -4,6 +4,8 @@ const ytdl = require('ytdl-core');
 const MusicQueue = require("./queue");
 const Song = require("./song.js");
 const axios = require('axios').default;
+const MusicQueueEmbed = require('./queue_embed');
+const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
 
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/search"
 const YOUTUBE_PLAYLIST_API_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
@@ -12,15 +14,33 @@ const YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/playlist?list="
 // TODO: Create module for embed-type music player
 class MusicPlayer {
 
-    constructor(textChannel, voiceChannel, connection, volume) {
+    constructor(textChannel, voiceChannel, volume) {
         this.textChannel = textChannel
         this.voiceChannel = voiceChannel;
-        this.connection = connection;
+        this.audioPlayer = createAudioPlayer();
+        this.voiceConnection = joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: voiceChannel.guild.id,
+            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+        });
         this.volume = volume;
         this.musicQueue = new MusicQueue([])
+        this.queueLock = false;
+
+        // Configure audio player
+        this.audioPlayer.on('stateChange', (oldState, newState) => {
+            if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
+                // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
+                // The queue is then processed to start playing the next track, if one is available.
+                void this.processQueue();
+            } else if (newState.status === AudioPlayerStatus.Playing) {
+                // If the Playing state has been entered, then a new track has started playback.
+            }
+        });
+        this.voiceConnection.subscribe(this.audioPlayer)
     }
 
-    async playOrQueue(message, queueNumber) {
+    async enqueue(message, queueNumber) {
         const args = message.content.split(' ');
         const q = args.splice(1).join(" ")
 
@@ -32,12 +52,13 @@ class MusicPlayer {
                 videoId,
                 songInfo.videoDetails.title,
                 songInfo.videoDetails.thumbnails,
-                songInfo.videoDetails.lengthSeconds
+                songInfo.videoDetails.lengthSeconds,
+                songInfo.videoDetails.ownerChannelName
             )
             this.musicQueue.addSongToIndex(song, queueNumber)
-            this.textChannel.send(`I've queued **${song.title}** for you! ~`)
+            if (musicQueue.isEmpty()) this.textChannel.send(`I've queued **${song.title}** for you! ~`);
         } else if (q.startsWith(YOUTUBE_PLAYLIST_URL)) {
-            playlistId = q.slice(YOUTUBE_PLAYLIST_URL.length)
+            let playlistId = q.slice(YOUTUBE_PLAYLIST_URL.length)
             let songs = []
 
             let params = {
@@ -57,13 +78,14 @@ class MusicPlayer {
                     return console.error(err);
                 }
                 for (const item of response.data.items) {
-                    songs.push(new Song(
+                    const song = new Song(
                         item.snippet.resourceId.videoId,
                         item.snippet.title,
                         item.snippet.thumbnails,
                         -1,
                         item.snippet.videoOwnerChannelTitle,
-                    ))
+                    )
+                    songs.push(song)
                 }
                 params.pageToken = response.data.nextPageToken
             } while (response.data.nextPageToken)
@@ -88,65 +110,71 @@ class MusicPlayer {
             }
             const videoId = response.data.items[0].id.videoId
             const songInfo = await ytdl.getInfo(videoId);
-
-            this.musicQueue.addSongToIndex(new Song(
+            const song = new Song(
                 videoId,
                 songInfo.videoDetails.title,
                 songInfo.videoDetails.thumbnails,
                 songInfo.videoDetails.lengthSeconds,
                 songInfo.videoDetails.ownerChannelName
-            ), queueNumber)
+            )
+            this.musicQueue.addSongToIndex(song, queueNumber)
+            if (musicQueue.isEmpty()) this.textChannel.send(`I've queued **${song.title}** for you! ~`);
         }
-        if (!this.connection) {
-            try {
-                var connection = await this.voiceChannel.join();
-                this.connection = connection;
-                this._play(this.musicQueue.songs[0]);
-            } catch (err) {
-                console.log(err);
-                return this.textChannel.send(err);
-            }
-        }
+
+        this.processQueue()
     }
 
     skip() {
         this.textChannel.send(`Skipping ${this.musicQueue.nowPlaying.title}...`)
-        this.connection.dispatcher.end();
+        this.audioPlayer.stop();
     }
 
     leave() {
+        this.queueLock = true;
+        this.musicQueue.empty();
+        this.audioPlayer.stop(true);
         this.textChannel.send(`Alright... I'm heading out now ~`)
-        if (this.connection.dispatcher != null) this.connection.dispatcher.end();
-        this.voiceChannel.leave();
+        this.voiceConnection.disconnect()
     }
 
-    _play(song) {
-        if (!song) {
-            if (this.textChannel != null) {
-                this.textChannel.send(`That's all the songs ~w~`).then(() => {
-                    this.textChannel.send(`I'm gonna go get some rest now... Byebye~`);
-                })
-                this.voiceChannel.leave();
-                //destroy self from map
-            }
-            return;
-        }
-        this.musicQueue.nowPlaying = song
-        this.textChannel.send(`Playing **${song.title}** ~`);
-        const dispatcher = this.connection.play(ytdl(song.videoId), { filter: 'audioonly', quality: 'highestaudio' })
-            .on('finish', () => {
-                this._play(this.musicQueue.songs[0]);
-            })
-            .on('error', error => {
-                console.error(error);
-            });
-        this.musicQueue.songs.shift();
-        dispatcher.setVolume(this.volume * 1);
-    }
     shuffle() { }
     listSongs() { }
+    viewQueue(message) {
+        const args = message.content.split(' ');
+        let page = 1
+        if (args.length > 1) {
+            page = args.splice(1).join(" ");
+        }
+        let embed = new MusicQueueEmbed(this.musicQueue)
+        this.textChannel.send(embed.build(page))
+    }
 
+    async processQueue() {
+        // If the queue is locked (already being processed), is empty, or the audio player is already playing something, return
+        console.log(this.audioPlayer.state.status)
+        if (this.queueLock || this.audioPlayer.state.status != AudioPlayerStatus.Idle || this.musicQueue.songs.length == 0) {
+            console.log("RETURN!")
+            return;
+        }
+        // Lock the queue to guarantee safe access
+        this.queueLock = true;
 
+        // Take the first item from the queue. This is guaranteed to exist due to the non-empty check above.
+        const nextTrack = this.musicQueue.shift();
+        try {
+            // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
+            const resource = await nextTrack.createAudioResource();
+            this.audioPlayer.play(resource);
+            this.textChannel.send(`Playing **${nextTrack.title}** ~`);
+            this.queueLock = false;
+        } catch (error) {
+            // If an error occurred, try the next item of the queue instead
+            nextTrack.onError(error);
+            this.queueLock = false;
+        }
+
+        return this.processQueue();
+    }
 }
 
 module.exports = MusicPlayer

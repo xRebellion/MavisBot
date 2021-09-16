@@ -12,7 +12,7 @@ logger.add(new logger.transports.Console, {
 logger.level = 'debug';
 
 // Initialize Discord client
-var client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
+var client = new Client({ intents: ['GUILD_VOICE_STATES', 'GUILD_MESSAGES', 'GUILDS'], partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
 client.on('ready', () => {
 	client.user.setPresence({ activity: { name: 'm/help', type: 'LISTENING' } });
 	logger.info('Ready!~');
@@ -29,7 +29,7 @@ client.once('disconnect', () => {
 
 
 
-client.on('message', message => {
+client.on('messageCreate', message => {
 	cmd.processCmd(message)
 });
 
