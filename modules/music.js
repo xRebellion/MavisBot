@@ -1,12 +1,20 @@
 const Discord = require('discord.js');
+const client = new Discord.Client();
 const ytdl = require('ytdl-core');
+const axios = require('axios').default;
+
 const auth = require('../data/auth.json');
 const registered = require('../data/deprecated/registered.deprecated.json');
-const client = new Discord.Client();
-const axios = require('axios').default;
-const queue = new Map();
-const youtubeAPIURL = "https://www.googleapis.com/youtube/v3/search"
 const msgs = require('../data/messages.js')
+const MusicQueue = require('./music/queue.js')
+const Song = require('./music/song.js')
+
+const youtubeAPIURL = "https://www.googleapis.com/youtube/v3/search"
+const youtubePlaylistAPIURL = "https://www.googleapis.com/youtube/v3/playlistItems"
+const youtubeWatchURL = "https://www.youtube.com/watch?v="
+const youtubePlaylistURL = "https://www.youtube.com/playlist?list="
+
+const queue = new Map();
 
 function delay(t, v) {
     return new Promise(function (resolve) {
@@ -14,8 +22,9 @@ function delay(t, v) {
     });
 }
 
-async function execute(message, serverQueue) {
+async function execute(message, serverQueue, queueNumber) {
     const args = message.content.split(' ');
+    const q = args.splice(1).join(" ")
 
     const voiceChannel = message.member.voice.channel;
 
@@ -31,69 +40,115 @@ async function execute(message, serverQueue) {
             return defaultVoiceChannel.leave()
         })
     }
+
     const permissions = voiceChannel.permissionsFor(message.client.user);
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
         return message.channel.send(defaultMessage.NO_MUSIC_PERMISSION);
     }
-    const params = {
-        part: "id",
-        key: auth.youtube_api_key,
-        q: args.splice(1).join(" "),
-        type: "video",
-        maxResults: 1
-    }
-    let response = null
-    try {
-        response = await axios.get(youtubeAPIURL, {
-            params: params
-        })
-    } catch (err) {
-        return console.error(err);
-    }
-
-    const songInfo = await ytdl.getInfo(response.data.items[0].id.videoId);
-    const song = {
-        title: songInfo.videoDetails.title,
-        url: songInfo.videoDetails.video_url,
-    };
-
+    let musicQueue = null
     if (!serverQueue) {
-        const queueConstruct = {
-            textChannel: message.channel,
-            voiceChannel: voiceChannel,
-            connection: null,
-            songs: [],
-            volume: 1.5,
-            playing: true,
-        };
+        musicQueue = new MusicQueue(
+            message.channel,
+            voiceChannel,
+            null,
+            [],
+            1
+        )
+    } else {
+        musicQueue = serverQueue
+    }
 
-        queue.set(message.guild.id, queueConstruct);
+    if (q.startsWith(youtubeWatchURL)) {
+        const videoId = q.slice(youtubeWatchURL.length)
+        const songInfo = await ytdl.getInfo(videoId);
+        musicQueue.addSongToIndex(new Song(
+            videoId,
+            songInfo.videoDetails.title,
+            songInfo.videoDetails.thumbnails,
+            songInfo.videoDetails.lengthSeconds
+        ), queueNumber)
+    } else if (q.startsWith(youtubePlaylistURL)) {
+        playlistId = q.slice(youtubePlaylistURL.length)
+        tempSongs = []
 
-        queueConstruct.songs.push(song);
+        let params = {
+            part: "snippet",
+            key: auth.youtube_api_key,
+            playlistId: playlistId,
+            maxResults: 50,
+            pageToken: null
+        }
+
+        do {
+            try {
+                response = await axios.get(youtubePlaylistAPIURL, {
+                    params: params
+                })
+            } catch (err) {
+                return console.error(err);
+            }
+            for (const item of response.data.items) {
+                tempSongs.push(new Song(
+                    item.snippet.resourceId.videoId,
+                    item.snippet.title,
+                    item.snippet.thumbnails,
+                    -1,
+                    item.snippet.videoOwnerChannelTitle,
+                ))
+            }
+            params.pageToken = response.data.nextPageToken
+        } while (response.data.nextPageToken)
+
+        musicQueue.addSongsToIndex(tempSongs, queueNumber);
+    } else {
+        const params = {
+            part: "id",
+            key: auth.youtube_api_key,
+            q: q,
+            type: "video",
+            maxResults: 1
+        }
 
         try {
+            response = await axios.get(youtubeAPIURL, {
+                params: params
+            })
+        } catch (err) {
+            return console.error(err);
+        }
+        const videoId = response.data.items[0].id.videoId
+        const songInfo = await ytdl.getInfo(videoId);
+
+        musicQueue.addSongToIndex(new Song(
+            videoId,
+            songInfo.videoDetails.title,
+            songInfo.videoDetails.thumbnails,
+            songInfo.videoDetails.lengthSeconds,
+            songInfo.videoDetails.ownerChannelName
+        ), queueNumber)
+    }
+
+    if (!serverQueue) {
+        queue.set(message.guild.id, musicQueue);
+        try {
             var connection = await voiceChannel.join();
-            queueConstruct.connection = connection;
-            play(message.guild, queueConstruct.songs[0]);
+            musicQueue.connection = connection;
+            play(message.guild, musicQueue.songs[0]);
         } catch (err) {
             console.log(err);
             queue.delete(message.guild.id);
             return message.channel.send(err);
         }
-    } else {
-        serverQueue.songs.push(song);
-        console.log(serverQueue.songs);
-        return message.channel.send(`I've queued **${song.title}** for you! ~`).then();
     }
 }
 
 function skip(message, serverQueue) {
     if (!serverQueue) return message.channel.send(msgs.MUSIC_SKIP);
     if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send(MUSIC_WRONG_VOICE_CHANNEL);
-    message.channel.send(`Skipping ${serverQueue.songs[0].title}...`)
+    message.channel.send(`Skipping ${serverQueue.nowPlaying.title}...`)
     serverQueue.connection.dispatcher.end();
-
 }
+
 
 function leave(message, serverQueue) {
     if (!serverQueue) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
@@ -118,22 +173,29 @@ function play(guild, song) {
         }
         return;
     }
+    serverQueue.nowPlaying = song
     serverQueue.textChannel.send(`Playing **${song.title}** ~`);
-    const dispatcher = serverQueue.connection.play(ytdl(song.url))
+    const dispatcher = serverQueue.connection.play(ytdl(song.videoId), { filter: 'audioonly', quality: 'highestaudio' })
         .on('finish', () => {
-            console.log('Music ended!');
-            serverQueue.songs.shift();
             play(guild, serverQueue.songs[0]);
         })
         .on('error', error => {
             console.error(error);
         });
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+    serverQueue.songs.shift();
+    dispatcher.setVolume(serverQueue.volume * 1);
+}
+
+function shuffle(message, serverQueue) {
+    if (!serverQueue) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
+    if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    serverQueue.shuffleQueue()
 }
 
 module.exports = {
-    queue: queue,
-    execute: execute,
-    leave: leave,
-    skip: skip
+    queue,
+    execute,
+    leave,
+    skip,
+    shuffle
 }

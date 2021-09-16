@@ -23,3 +23,9 @@ function setDefaultVoice(guildID, voiceChannelID) {
         };
     });
 }
+
+
+module.exports = {
+    getUserFromMention,
+    setDefaultVoice,
+}
