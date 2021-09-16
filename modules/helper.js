@@ -33,4 +33,5 @@ function delay(t, v) {
 module.exports = {
     getUserFromMention,
     setDefaultVoice,
+    delay,
 }
