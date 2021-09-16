@@ -1,5 +1,5 @@
 var { MessageEmbed } = require('discord.js');
-var music = require('./music.js')
+var music = require('./music/main.js')
 var fun = require('./fun.js')
 const msgs = require('../data/messages.js')
 const prefix = 'm/';
@@ -8,7 +8,6 @@ const registered = require('../data/deprecated/registered.deprecated.json');
 function processCmd(message) {
     if (message.author.bot) return;
     if (!message.content.startsWith(prefix)) return;
-    const serverQueue = music.queue.get(message.guild.id);
     const embed = new MessageEmbed()
         .setTitle('**Mavis here~**')
         .setColor(0x027059)
@@ -53,19 +52,19 @@ function processCmd(message) {
                 fun.peekPicture(message, args);
                 break;
             case 'play':
-                music.execute(message, serverQueue, -1);
+                music.execute(message, -1);
                 break;
             case 'playtop':
-                music.execute(message, serverQueue, 1);
+                music.execute(message, 1);
                 break;
             case 'shuffle':
-                music.shuffle(message, serverQueue);
+                music.shuffle(message);
                 break;
             case 'skip':
-                music.skip(message, serverQueue);
+                music.skip(message);
                 break;
             case 'leave':
-                music.leave(message, serverQueue);
+                music.leave(message);
                 break;
             case 'help':
                 message.channel.send(embed)

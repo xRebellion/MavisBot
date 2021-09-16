@@ -1,0 +1,74 @@
+const Discord = require('discord.js');
+const client = new Discord.Client();
+
+const registered = require('../../data/deprecated/registered.deprecated.json');
+const msgs = require('../../data/messages.js')
+const MusicPlayer = require('./player.js')
+
+const serverMap = new Map();
+
+async function execute(message, queueNumber) {
+    let serverPlayer = serverMap.get(message.guild.id)
+
+    const voiceChannel = message.member.voice.channel;
+
+    if (!voiceChannel) {
+        const defaultVoiceChannel = await client.channels.fetch(registered.default_voice_channels[message.guild.id]);
+        const permissions = defaultVoiceChannel.permissionsFor(message.client.user);
+        if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
+            return message.channel.send(defaultMessage.NO_MUSIC_PERMISSION);
+        }
+        defaultVoiceChannel.join();
+        return delay(5000).then(() => {
+            message.channel.send(msgs.MUSIC_NO_ONE_IN_THE_ROOM);
+            return defaultVoiceChannel.leave()
+        })
+    }
+
+    const permissions = voiceChannel.permissionsFor(message.client.user);
+    if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
+        return message.channel.send(defaultMessage.NO_MUSIC_PERMISSION);
+    }
+
+    if (!serverPlayer) {
+        serverPlayer = new MusicPlayer(
+            message.channel,
+            voiceChannel,
+            null,
+            1
+        )
+        serverMap.set(message.guild.id, serverPlayer);
+        serverPlayer.playOrQueue(message, queueNumber);
+    } else {
+        serverPlayer.playOrQueue(message, queueNumber);
+    }
+}
+
+function skip(message) {
+    const serverPlayer = serverMap.get(message.guild.id)
+    if (!serverPlayer) return message.channel.send(msgs.MUSIC_SKIP);
+    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(MUSIC_WRONG_VOICE_CHANNEL);
+    serverPlayer.skip()
+}
+
+
+function leave(message) {
+    const serverPlayer = serverMap.get(message.guild.id)
+    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
+    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    serverPlayer.leave()
+    serverMap.delete(message.guild.id);
+}
+
+function shuffle(message, serverQueue) {
+    if (!serverQueue) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
+    if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    serverQueue.shuffleQueue()
+}
+
+module.exports = {
+    execute,
+    leave,
+    skip,
+    shuffle
+}
