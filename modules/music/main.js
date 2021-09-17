@@ -1,4 +1,3 @@
-const { joinVoiceChannel } = require('@discordjs/voice');
 const msgs = require('../../data/messages.js');
 const MusicPlayer = require('./player.js');
 
@@ -57,9 +56,10 @@ function leave(message) {
 }
 
 function shuffle(message, serverQueue) {
-    if (!serverQueue) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
-    if (message.member.voice.channel != serverQueue.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
-    serverQueue.shuffleQueue()
+    const serverPlayer = serverMap.get(message.guild.id)
+    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
+    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    serverPlayer.shuffle()
 }
 
 function viewQueue(message) {

@@ -1,3 +1,4 @@
+
 function getUserFromMention(mention) {
     if (!mention) return;
 
@@ -30,8 +31,34 @@ function delay(t, v) {
     });
 }
 
+function sendFadingMessage(textChannel, waitDelay, message) {
+    textChannel.send(message).then(msg => {
+        delay(waitDelay).then(() => {
+            msg.delete()
+        })
+    })
+}
+
+function ptToSeconds(durationStr) {
+    if (!durationStr.startsWith('PT')) {
+        return -1
+    }
+    durationStr = durationStr.slice(2, -1) // removes PT and S
+
+    let durationArray = durationStr.split(/H|M/)
+
+    // Padding
+    while (durationArray.length < 3) {
+        durationArray.unshift("0")
+    }
+
+    return parseInt(durationArray[0]) * 3600 + parseInt(durationArray[1]) * 60 + parseInt(durationArray[2])
+}
+
 module.exports = {
     getUserFromMention,
     setDefaultVoice,
     delay,
+    ptToSeconds,
+    sendFadingMessage
 }

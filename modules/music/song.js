@@ -1,22 +1,20 @@
-const { AudioResource, demuxProbe, createAudioResource } = require("@discordjs/voice");
+const { demuxProbe, createAudioResource } = require("@discordjs/voice");
 const ytdl = require("youtube-dl-exec").raw;
+const { getInfo } = require('ytdl-core')
 
 class Song {
-    constructor(videoId, title, thumbnails, duration, channelName, onStart, onFinish, onError) {
+    constructor(videoId, title, thumbnail, duration, channelName) {
         this.videoId = videoId;
         this.title = title;
-        this.thumbnailUrl = thumbnails[((thumbnails.length - 2) < 0) ? 0 : thumbnails.length - 2];
+        this.thumbnail = thumbnail;
         this.duration = duration;
         this.owner = channelName;
-        this.onStart = onStart;
-        this.onFinish = onFinish;
-        this.onError = onError;
     }
 
     createAudioResource() {
         return new Promise((resolve, reject) => {
             const process = ytdl(
-                this._getVideoURL(),
+                this.videoId,
                 {
                     o: '-',
                     q: '',
@@ -43,14 +41,10 @@ class Song {
         })
     }
 
-    _getVideoURL() {
+    getVideoURL() {
         return "https://www.youtube.com/watch?v=" + this.videoId
     }
-
     _getReadableDuration() {
-        if (this.duration < 0) {
-            return undefined
-        }
 
         if (this.duration < 3600) {
             return new Date(this.duration * 1000).toISOString().substr(14, 5)
@@ -61,9 +55,19 @@ class Song {
 
     flattenForQueue() {
         let readableDuration = this._getReadableDuration()
-        return `[${this.title}](${this._getVideoURL()}) ║ ${readableDuration}\n`
+        return `[${this.title}](${this.getVideoURL()}) ║ ${readableDuration}\n`
     }
 
+    static async from(videoId) {
+        const info = await getInfo(videoId)
+        return new Song(
+            videoId,
+            info.videoDetails.title,
+            info.videoDetails.thumbnails.slice(-2, -1)[0],
+            info.videoDetails.lengthSeconds,
+            info.videoDetails.ownerChannelName,
+        )
+    }
 }
 
 module.exports = Song

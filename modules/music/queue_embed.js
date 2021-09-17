@@ -8,18 +8,21 @@ class MusicQueueEmbed {
 
     _queueToText(page) {
         let text = ""
-        this.musicQueue.songs.slice(10 * (page - 1), 10 * page).forEach((song, index) => {
-            let songInfo = song.flattenForQueue()
-            text = text + (index + 1) + ". " + songInfo + "\n"
-        })
+        let songs = this.musicQueue.songs
+        for (let i = 10 * (page - 1); i < 10 * page && i < songs.length; i++) {
+            let songInfo = songs[i].flattenForQueue()
+            text = text + (i + 1) + ". " + songInfo + "\n"
+        }
+
         return text;
 
     }
 
     build(page) {
+        let description = this._queueToText(page)
         const embed = new MessageEmbed()
             .setAuthor("In Queue")
-            .setDescription(this._queueToText(page))
+            .setDescription(description)
         return embed;
     }
 }

@@ -1,5 +1,5 @@
 var { MessageEmbed } = require('discord.js');
-var music = require('./music/main.js').default
+var music = require('./music/main.js')
 var fun = require('./fun.js')
 const msgs = require('../data/messages.js')
 const prefix = 'm/';
