@@ -11,7 +11,7 @@ Here's a list of things you can do:
 ▬▬▬▬▬▬ Music (ALPHA) ▬▬▬▬▬▬
 :arrow_forward: │ m/play <keyword> │ play a song on your voice channel
 :arrow_up: │ m/playtop <keyword> │ play a song on top of queue
-:notes: │ m/queue [page] │ view queue
+:notes: │ m/q [page] │ view queue
 :twisted_rightwards_arrows: │ m/shuffle │ shuffles queue
 :fast_forward: │ m/skip │ skips what's playing right now
 :leaves: │ m/leave │ just straight up leaving the voice room because you asked me to .w.

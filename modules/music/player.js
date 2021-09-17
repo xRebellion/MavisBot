@@ -51,6 +51,7 @@ class MusicPlayer {
             }
         })
         this.voiceConnection.subscribe(this.audioPlayer)
+        this._resource = null
     }
 
     async enqueue(message, queueNumber) {
@@ -128,16 +129,22 @@ class MusicPlayer {
             } catch (err) {
                 return console.error(err);
             }
-            const videoId = response.data.items[0].id.videoId
-            const song = await Song.from(videoId)
-            song.owner = message.author
+            try {
+                const videoId = response.data.items[0].id.videoId
+                const song = await Song.from(videoId)
+                song.owner = message.author
 
-            this.musicQueue.addSongToIndex(song, queueNumber)
-            if (!this.musicQueue.isEmpty()) {
-                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+                this.musicQueue.addSongToIndex(song, queueNumber)
+                if (!this.musicQueue.isEmpty()) {
+                    const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
 
-                this.textChannel.send({ embeds: [enqueueEmbed.build()] })
+                    this.textChannel.send({ embeds: [enqueueEmbed.build()] })
+                }
+            } catch (err) {
+                console.log(err)
+                this.textChannel.send("Music Not Found!")
             }
+
         }
 
         this.processQueue()
@@ -157,6 +164,10 @@ class MusicPlayer {
             5000,
             `Moved ${this.musicQueue.songs[to].title} to position ${to + 1}!`
         )
+    }
+
+    bumpPlayer() {
+        this.playerEmbed.resend(this.musicQueue.nowPlaying)
     }
 
     skip() {
@@ -212,8 +223,8 @@ class MusicPlayer {
         const nextTrack = this.musicQueue.shift();
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-            const resource = await nextTrack.createAudioResource();
-            this.audioPlayer.play(resource);
+            this._resource = await nextTrack.createAudioResource();
+            this.audioPlayer.play(this._resource);
             this.queueLock = false;
         } catch (error) {
             console.log(error)

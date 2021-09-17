@@ -62,11 +62,20 @@ function viewQueue(message) {
     serverPlayer.viewQueue(message)
 }
 
+function nowPlaying(message) {
+    const serverPlayer = serverMap.get(message.guild.id)
+    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
+    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    serverPlayer.bumpPlayer()
+}
+
 module.exports = {
     execute,
     leave,
     skip,
     move,
     shuffle,
-    viewQueue
+    viewQueue,
+    nowPlaying
+
 }

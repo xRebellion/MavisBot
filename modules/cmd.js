@@ -8,7 +8,7 @@ const registered = require('../data/deprecated/registered.deprecated.json');
 function processCmd(message) {
     if (message.author.bot) return;
     if (!message.content.startsWith(prefix)) return;
-    const embed = new MessageEmbed()
+    const helpEmbed = new MessageEmbed()
         .setTitle('**Mavis here~**')
         .setColor(0x027059)
         .setDescription(msgs.HELP);
@@ -51,14 +51,26 @@ function processCmd(message) {
             case 'peekpicture':
                 fun.peekPicture(message, args);
                 break;
+
+            case 'move':
+                music.move(message);
+                break;
+            case 'leave':
+                music.leave(message);
+                break;
+            case 'np':
+            case 'nowplaying':
+                music.nowPlaying(message);
+                break;
             case 'play':
                 music.execute(message, -1);
                 break;
             case 'playtop':
                 music.execute(message, 0);
                 break;
-            case 'move':
-                music.move(message);
+            case 'q':
+            case 'queue':
+                music.viewQueue(message);
                 break;
             case 'shuffle':
                 music.shuffle(message);
@@ -66,14 +78,8 @@ function processCmd(message) {
             case 'skip':
                 music.skip(message);
                 break;
-            case 'leave':
-                music.leave(message);
-                break;
-            case 'q':
-                music.viewQueue(message);
-                break;
             case 'help':
-                message.channel.send({ embeds: [embed] })
+                message.channel.send({ embeds: [helpEmbed] })
                 break;
             case 'e':
                 fun.me(message, args);
