@@ -23,7 +23,7 @@ function me(message, args) {
     }
     if (!args[0]) pick = me[Math.floor(Math.random() * me.length)]
     else pick = me[args[0] - 1]
-    message.channel.send(null, {
+    message.channel.send({
         files: [
             "./img/mavis/" + pick
         ]
@@ -42,7 +42,7 @@ function sticker(message, args) {
         message.channel.send("I don't have that .w. ~");
         return;
     }
-    message.channel.send(null, {
+    message.channel.send({
         files: [
             "./img/sticker/" + pick
         ]
