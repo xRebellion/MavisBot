@@ -4,8 +4,9 @@ const helper = require('../helper')
 const MusicQueue = require("./queue");
 const Song = require("./song.js");
 const axios = require('axios').default;
-const MusicQueueEmbed = require('./queue_embed');
-const MusicPlayerEmbed = require('./player_embed');
+const MusicQueueEmbed = require('./embed/queue_embed');
+const MusicPlayerEmbed = require('./embed/player_embed');
+const EnqueueEmbed = require('./embed/enqueue_embed')
 const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
 
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/search"
@@ -29,7 +30,7 @@ class MusicPlayer {
         this.playerEmbed = new MusicPlayerEmbed(textChannel)
         this.queueLock = false;
 
-        this.playerEmbed.send(this.musicQueue.nowPlaying, this.musicQueue.songs[0]);
+        this.playerEmbed.send(this.musicQueue.nowPlaying);
         // Configure audio player
         this.audioPlayer.on('stateChange', (oldState, newState) => {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
@@ -38,7 +39,7 @@ class MusicPlayer {
                 void this.processQueue();
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
-                this.playerEmbed.resend(this.musicQueue.nowPlaying, this.musicQueue.songs[0])
+                this.playerEmbed.resend(this.musicQueue.nowPlaying)
             }
         });
 
@@ -60,13 +61,14 @@ class MusicPlayer {
         if (q.startsWith(YOUTUBE_VIDEO_URL)) {
             const videoId = q.slice(YOUTUBE_VIDEO_URL.length)
             const song = await Song.from(videoId)
+            song.owner = message.author
             this.musicQueue.addSongToIndex(song, queueNumber)
-            if (!this.musicQueue.isEmpty())
-                helper.sendFadingMessage(
-                    this.textChannel,
-                    5000,
-                    `I've queued **${song.title}** for you! ~`
-                )
+
+            if (!this.musicQueue.isEmpty()) {
+                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+                this.textChannel.send({ embeds: [enqueueEmbed.build()] })
+            }
+
 
         } else if (q.startsWith(YOUTUBE_PLAYLIST_URL)) {
             let playlistId = q.slice(YOUTUBE_PLAYLIST_URL.length)
@@ -95,6 +97,7 @@ class MusicPlayer {
                         item.snippet.thumbnails.standard,
                         -1,
                         item.snippet.videoOwnerChannelTitle,
+                        message.author
                     )
 
                     songs.push(song)
@@ -107,7 +110,7 @@ class MusicPlayer {
             helper.sendFadingMessage(
                 this.textChannel,
                 5000,
-                `Queued ${songs.length} songs!`
+                `Queued **${songs.length}** songs!`
             )
         } else {
             const params = {
@@ -127,23 +130,40 @@ class MusicPlayer {
             }
             const videoId = response.data.items[0].id.videoId
             const song = await Song.from(videoId)
+            song.owner = message.author
+
             this.musicQueue.addSongToIndex(song, queueNumber)
-            if (!this.musicQueue.isEmpty())
-                helper.sendFadingMessage(
-                    this.textChannel,
-                    5000,
-                    `I've queued **${song.title}** for you! ~`
-                )
+            if (!this.musicQueue.isEmpty()) {
+                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+
+                this.textChannel.send({ embeds: [enqueueEmbed.build()] })
+            }
         }
 
         this.processQueue()
+    }
+
+    move(message) {
+        let args = message.content.split(' ');
+        args = args.splice(1)
+        let from = parseInt(args[0]) - 1
+        let to = 0
+        if (args[1]) {
+            to = parseInt(args[1]) - 1
+        }
+        this.musicQueue.move(from, to)
+        helper.sendFadingMessage(
+            this.textChannel,
+            5000,
+            `Moved ${this.musicQueue.songs[to].title} to position ${to + 1}!`
+        )
     }
 
     skip() {
         helper.sendFadingMessage(
             this.textChannel,
             5000,
-            `Skipping ${this.musicQueue.nowPlaying.title}...`
+            `Skipping **${this.musicQueue.nowPlaying.title}**...`
         )
         this.audioPlayer.stop();
     }
@@ -161,10 +181,10 @@ class MusicPlayer {
         helper.sendFadingMessage(
             this.textChannel,
             5000,
-            `Shuffled ${this.musicQueue.songs.length} songs!`
+            `Shuffled **${this.musicQueue.songs.length}** songs!`
         )
     }
-    listSongs() { }
+
     viewQueue(message) {
         const args = message.content.split(' ');
         let page = 1
@@ -175,7 +195,7 @@ class MusicPlayer {
 
         helper.sendFadingMessage(
             this.textChannel,
-            15000,
+            30000,
             { embeds: [embed.build(page)] }
         )
     }
@@ -194,11 +214,6 @@ class MusicPlayer {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
             const resource = await nextTrack.createAudioResource();
             this.audioPlayer.play(resource);
-            helper.sendFadingMessage(
-                this.textChannel,
-                5000,
-                `Playing **${nextTrack.title}** ~`
-            )
             this.queueLock = false;
         } catch (error) {
             console.log(error)

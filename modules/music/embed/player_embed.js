@@ -5,7 +5,7 @@ class MusicPlayerEmbed {
         this.textChannel = textChannel
         this.embedMessage = null
     }
-    buildEmbed(song, nextSong) {
+    buildEmbed(song) {
 
         if (!song) return new MessageEmbed()
             .setColor(0x027059)
@@ -20,15 +20,15 @@ class MusicPlayerEmbed {
             .setURL(song.getVideoURL()) // Song URL
             .setImage(song.thumbnail.url)
     }
-    async send(song, nextSong) {
-        this.embedMessage = await this.textChannel.send({ embeds: [this.buildEmbed(song, nextSong)] });
+    async send(song) {
+        this.embedMessage = await this.textChannel.send({ embeds: [this.buildEmbed(song)] });
     }
-    async resend(song, nextSong) {
+    async resend(song) {
         this.embedMessage.delete()
-        this.embedMessage = await this.textChannel.send({ embeds: [this.buildEmbed(song, nextSong)] });
+        this.embedMessage = await this.textChannel.send({ embeds: [this.buildEmbed(song)] });
     }
-    update(song, nextSong) {
-        this.embedMessage.edit({ embeds: [this.buildEmbed(song, nextSong)] });
+    update(song) {
+        this.embedMessage.edit({ embeds: [this.buildEmbed(song)] });
     }
     destroy() {
         this.embedMessage.delete();

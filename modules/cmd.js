@@ -55,7 +55,10 @@ function processCmd(message) {
                 music.execute(message, -1);
                 break;
             case 'playtop':
-                music.execute(message, 1);
+                music.execute(message, 0);
+                break;
+            case 'move':
+                music.move(message);
                 break;
             case 'shuffle':
                 music.shuffle(message);
@@ -70,7 +73,7 @@ function processCmd(message) {
                 music.viewQueue(message);
                 break;
             case 'help':
-                message.channel.send(embed)
+                message.channel.send({ embeds: [embed] })
                 break;
             case 'e':
                 fun.me(message, args);

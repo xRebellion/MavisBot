@@ -3,12 +3,13 @@ const ytdl = require("youtube-dl-exec").raw;
 const { getInfo } = require('ytdl-core')
 
 class Song {
-    constructor(videoId, title, thumbnail, duration, channelName) {
+    constructor(videoId, title, thumbnail, duration, channelName, requestedBy) {
         this.videoId = videoId;
         this.title = title;
         this.thumbnail = thumbnail;
         this.duration = duration;
-        this.owner = channelName;
+        this.channelName = channelName;
+        this.owner = requestedBy
     }
 
     createAudioResource() {
@@ -63,7 +64,7 @@ class Song {
         return new Song(
             videoId,
             info.videoDetails.title,
-            info.videoDetails.thumbnails.slice(-2, -1)[0],
+            info.videoDetails.thumbnails.slice(-1)[0],
             info.videoDetails.lengthSeconds,
             info.videoDetails.ownerChannelName,
         )

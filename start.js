@@ -14,7 +14,7 @@ logger.level = 'debug';
 // Initialize Discord client
 var client = new Client({ intents: ['GUILD_VOICE_STATES', 'GUILD_MESSAGES', 'GUILDS'], partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
 client.on('ready', () => {
-	client.user.setPresence({ activity: { name: 'm/help', type: 'LISTENING' } });
+	client.user.setPresence({ activities: [{ name: 'm/help', type: 'WATCHING' }], status: 'online' });
 	logger.info('Ready!~');
 
 });

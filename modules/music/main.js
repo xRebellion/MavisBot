@@ -8,19 +8,6 @@ async function execute(message, queueNumber) {
 
     const voiceChannel = message.member.voice.channel;
 
-    // if (!voiceChannel) {
-    //     const defaultVoiceChannel = await client.channels.fetch(registered.default_voice_channels[message.guild.id]);
-    //     const permissions = defaultVoiceChannel.permissionsFor(message.client.user);
-    //     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
-    //         return message.channel.send(defaultMessage.NO_MUSIC_PERMISSION);
-    //     }
-    //     defaultVoiceChannel.join();
-    //     return delay(5000).then(() => {
-    //         message.channel.send(msgs.MUSIC_NO_ONE_IN_THE_ROOM);
-    //         return defaultVoiceChannel.leave()
-    //     })
-    // }
-
     const permissions = voiceChannel.permissionsFor(message.client.user);
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
         return message.channel.send(msgs.NO_MUSIC_PERMISSION);
@@ -54,8 +41,14 @@ function leave(message) {
     serverPlayer.leave()
     serverMap.delete(message.guild.id);
 }
+function move(message) {
+    const serverPlayer = serverMap.get(message.guild.id)
+    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
+    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    serverPlayer.move(message);
+}
 
-function shuffle(message, serverQueue) {
+function shuffle(message) {
     const serverPlayer = serverMap.get(message.guild.id)
     if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
     if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
@@ -73,6 +66,7 @@ module.exports = {
     execute,
     leave,
     skip,
+    move,
     shuffle,
     viewQueue
 }

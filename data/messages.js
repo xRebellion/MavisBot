@@ -10,8 +10,11 @@ Here's a list of things you can do:
 
 ▬▬▬▬▬▬ Music (ALPHA) ▬▬▬▬▬▬
 :arrow_forward: │ m/play <keyword> │ play a song on your voice channel
-:leaves: │ m/leave │ just straight up leaving the voice room because you asked me to .w.
+:arrow_up: │ m/playtop <keyword> │ play a song on top of queue
+:notes: │ m/queue [page] │ view queue
+:twisted_rightwards_arrows: │ m/shuffle │ shuffles queue
 :fast_forward: │ m/skip │ skips what's playing right now
+:leaves: │ m/leave │ just straight up leaving the voice room because you asked me to .w.
 
 `,
     NO_MUSIC_PERMISSION: 'Ah~ I don\'t have permission to connect or speak ;~;',

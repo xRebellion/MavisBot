@@ -54,6 +54,16 @@ class MusicQueue {
         return this.nowPlaying == null
     }
 
+    indexOf(song) {
+        return this.songs.indexOf(song)
+    }
+
+    move(from, to) {
+        if (from >= this.songs.length || to >= this.songs.length)
+            return
+        this.songs.splice(to, 0, this.songs.splice(from, 1)[0]);
+    }
+
     async updateDurations() {
         let q = ""
         let i = 0

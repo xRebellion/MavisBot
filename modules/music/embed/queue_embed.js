@@ -3,7 +3,6 @@ const { MessageEmbed } = require("discord.js")
 class MusicQueueEmbed {
     constructor(musicQueue) {
         this.musicQueue = musicQueue
-        this.description = ""
     }
 
     _queueToText(page) {
