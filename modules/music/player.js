@@ -36,6 +36,7 @@ class MusicPlayer {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
+                this.playerEmbed.stopProgressBar();
                 void this.processQueue();
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
@@ -167,6 +168,7 @@ class MusicPlayer {
     }
 
     bumpPlayer() {
+        this.playerEmbed.updateProgressBar()
         this.playerEmbed.resend(this.musicQueue.nowPlaying)
     }
 
@@ -219,11 +221,14 @@ class MusicPlayer {
         // Lock the queue to guarantee safe access
         this.queueLock = true;
 
+
         // Take the first item from the queue. This is guaranteed to exist due to the non-empty check above.
         const nextTrack = this.musicQueue.shift();
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
             this._resource = await nextTrack.createAudioResource();
+            this.playerEmbed.setAudioResource(this._resource)
+            this.playerEmbed.startProgressBar();
             this.audioPlayer.play(this._resource);
             this.queueLock = false;
         } catch (error) {

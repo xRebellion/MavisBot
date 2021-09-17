@@ -45,7 +45,7 @@ class Song {
     getVideoURL() {
         return "https://www.youtube.com/watch?v=" + this.videoId
     }
-    _getReadableDuration() {
+    getReadableDuration() {
 
         if (this.duration < 3600) {
             return new Date(this.duration * 1000).toISOString().substr(14, 5)
@@ -55,7 +55,7 @@ class Song {
     }
 
     flattenForQueue() {
-        let readableDuration = this._getReadableDuration()
+        let readableDuration = this.getReadableDuration()
         return `[${this.title}](${this.getVideoURL()}) ║ ${readableDuration}\n`
     }
 
