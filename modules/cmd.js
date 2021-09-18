@@ -1,6 +1,6 @@
 var { MessageEmbed } = require('discord.js');
-var music = require('./music.js')
-var fs = require('fs');
+var music = require('./music/main.js')
+var fun = require('./fun.js')
 const msgs = require('../data/messages.js')
 const prefix = 'm/';
 const registered = require('../data/deprecated/registered.deprecated.json');
@@ -8,10 +8,9 @@ const registered = require('../data/deprecated/registered.deprecated.json');
 function processCmd(message) {
     if (message.author.bot) return;
     if (!message.content.startsWith(prefix)) return;
-    const serverQueue = music.queue.get(message.guild.id);
-    const embed = new MessageEmbed()
+    const helpEmbed = new MessageEmbed()
         .setTitle('**Mavis here~**')
-        .setColor(0x01a59c)
+        .setColor(0x027059)
         .setDescription(msgs.HELP);
     if (message.content.substring(0, 2) == prefix) {
         var args = message.content.substring(2).split(' ');
@@ -50,68 +49,46 @@ function processCmd(message) {
         }
         switch (cmd) {
             case 'peekpicture':
-                var user = getUserFromMention(args[0]);
-                if (user) {
-                    message.channel.send("Peeking on others is not nice... But here it is\n", {
-                        files: [
-                            user.displayAvatarURL()
-                        ]
-                    })
-                } else {
-                    message.channel.send("I can't find the user that you're trying to peek on...");
-                }
+                fun.peekPicture(message, args);
                 break;
 
-            case 'play':
-                music.execute(message, serverQueue);
-                break;
-            case 'skip':
-                music.skip(message, serverQueue);
+            case 'move':
+                music.move(message);
                 break;
             case 'leave':
-                music.leave(message, serverQueue);
+                music.leave(message);
+                break;
+            case 'np':
+            case 'nowplaying':
+                music.nowPlaying(message);
+                break;
+            case 'play':
+                music.execute(message, -1);
+                break;
+            case 'playtop':
+                music.execute(message, 0);
+                break;
+            case 'q':
+            case 'queue':
+                music.viewQueue(message);
+                break;
+            case 'shuffle':
+                music.shuffle(message);
+                break;
+            case 'skip':
+                music.skip(message);
                 break;
             case 'help':
-                message.channel.send(embed)
+                message.channel.send({ embeds: [helpEmbed] })
                 break;
             case 'e':
-                var me = fs.readdirSync('./img/mavis/');
-                var pick = null
-                if (args[0] > me.length || args[0] <= 0) {
-                    message.channel.send("I don't have that .w. ~");
-                    break;
-                }
-                if (!args[0]) pick = me[Math.floor(Math.random() * me.length)]
-                else pick = me[args[0] - 1]
-                message.channel.send(null, {
-                    files: [
-                        "./img/mavis/" + pick
-                    ]
-                })
+                fun.me(message, args);
                 break;
             case 'sticker':
-                var emote = fs.readdirSync('./img/sticker/')
-                var pick = null
-                for (name of emote) {
-                    if (name.startsWith(args[0])) {
-                        pick = name;
-                        break;
-                    }
-                }
-                if (!pick) {
-                    message.channel.send("I don't have that .w. ~");
-                    break;
-                }
-                message.channel.send(null, {
-                    files: [
-                        "./img/sticker/" + pick
-                    ]
-                })
-
+                fun.sticker(message, args);
+                break;
         }
-
     }
-
 }
 
 module.exports = {

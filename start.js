@@ -1,7 +1,8 @@
 var { Client } = require('discord.js');
 var logger = require('winston');
-var auth = require('./data/auth.json');
-var cmd = require('./modules/cmd')
+var cmd = require('./modules/cmd');
+var http = require('http');
+const { time } = require('console');
 
 // Configure logger settings
 logger.remove(logger.transports.Console);
@@ -12,9 +13,9 @@ logger.add(new logger.transports.Console, {
 logger.level = 'debug';
 
 // Initialize Discord client
-var client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
+var client = new Client({ intents: ['GUILD_VOICE_STATES', 'GUILD_MESSAGES', 'GUILDS'], partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
 client.on('ready', () => {
-	client.user.setPresence({ activity: { name: 'm/help', type: 'LISTENING' } });
+	client.user.setPresence({ activities: [{ name: 'm/help', type: 'WATCHING' }], status: 'online' });
 	logger.info('Ready!~');
 
 });
@@ -29,8 +30,15 @@ client.once('disconnect', () => {
 
 
 
-client.on('message', message => {
+client.on('messageCreate', message => {
 	cmd.processCmd(message)
 });
 
-client.login(auth.token)
+client.login(process.env.MAVIS_BOT_TOKEN)
+
+// I'll leave this here just in case in need of a ping target
+// http.createServer((request, response) => {
+// 	console.log("Received request to wake up! (" + new Date(Date.now()).toLocaleString("en-US", { timezone: 'Asia/Jakarta' }) + ")")
+// 	response.writeHead(200)
+// 	response.end('Pong!')
+// }).listen(process.env.PORT || 6969)
