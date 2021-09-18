@@ -62,7 +62,7 @@ function createProgressBar(min, max, empty, filled) {
 
     const maxBars = 20
     let currentProgress = (min / max) * maxBars
-    for (let i = 0; i < currentProgress; i++) {
+    for (let i = 0; i < currentProgress && i < maxBars; i++) {
         bar = bar + filled
     }
     for (let i = currentProgress; i < maxBars; i++) {

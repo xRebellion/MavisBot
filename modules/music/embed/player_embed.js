@@ -15,16 +15,15 @@ class MusicPlayerEmbed {
         if (!this.song) return new MessageEmbed()
             .setColor(0x027059)
             .setAuthor("Music Player")
-            .setTitle("No song playing right now") // Song Name
+            .setTitle("Loading...") // Song Name
             .setURL("") // Song URL
         this.progressBar = helper.createProgressBar(this.audioResource.playbackDuration, this.song.duration * 1000, "░", "▓")
         return new MessageEmbed()
             .setColor(0x027059)
-            .setAuthor("Music Player")
-            .setTitle(this.song.title) // Song Name
+            .setAuthor("Now Playing")
+            .setTitle(":minidisc: " + this.song.title) // Song Name
             .setDescription(this.progressBar)
             .setURL(this.song.getVideoURL()) // Song URL
-
             .setImage(this.song.thumbnail.url)
     }
     async send(song) {

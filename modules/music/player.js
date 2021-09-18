@@ -6,7 +6,7 @@ const axios = require('axios').default;
 const MusicQueueEmbed = require('./embed/queue_embed');
 const MusicPlayerEmbed = require('./embed/player_embed');
 const EnqueueEmbed = require('./embed/enqueue_embed')
-const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus, VoiceConnectionStatus, entersState, VoiceConnectionDisconnectReason } = require('@discordjs/voice');
 
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/search"
 const YOUTUBE_PLAYLIST_API_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
@@ -28,6 +28,7 @@ class MusicPlayer {
         this.musicQueue = new MusicQueue([])
         this.playerEmbed = new MusicPlayerEmbed(textChannel)
         this.queueLock = false;
+        this.readyLock = false;
 
         this.playerEmbed.send(this.musicQueue.nowPlaying);
         // Configure audio player
@@ -45,11 +46,61 @@ class MusicPlayer {
 
         this.voiceConnection.on('stateChange', async (_, newState) => {
             if (newState.status === VoiceConnectionStatus.Disconnected) {
-                this.playerEmbed.destroy();
+                if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
+                    /*
+                        If the WebSocket closed with a 4014 code, this means that we should not manually attempt to reconnect,
+                        but there is a chance the connection will recover itself if the reason of the disconnect was due to
+                        switching voice channels. This is also the same code for the bot being kicked from the voice channel,
+                        so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
+                        the voice connection.
+                    */
+
+                    try {
+                        await entersState(this.voiceConnection, VoiceConnectionStatus.Connecting, 5_000);
+                        // Probably moved voice channel
+                    } catch {
+                        this.voiceConnection.destroy();
+                        // Probably removed from voice channel
+                    }
+                } else if (this.voiceConnection.rejoinAttempts < 5) {
+                    /*
+                        The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
+                    */
+                    await helper.delay((this.voiceConnection.rejoinAttempts + 1) * 5_000);
+                    this.voiceConnection.rejoin();
+                } else {
+                    /*
+                        The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
+                    */
+                    this.voiceConnection.destroy();
+                }
             } else if (newState.status === VoiceConnectionStatus.Destroyed) {
-                this.playerEmbed.destroy();
+                /*
+                    Once destroyed, stop the subscription
+                */
+                this.clearPlayer();
+            } else if (
+                !this.readyLock &&
+                (newState.status === VoiceConnectionStatus.Connecting || newState.status === VoiceConnectionStatus.Signalling)
+            ) {
+                /*
+                    In the Signalling or Connecting states, we set a 20 second time limit for the connection to become ready
+                    before destroying the voice connection. This stops the voice connection permanently existing in one of these
+                    states.
+                */
+                this.readyLock = true;
+                try {
+                    await entersState(this.voiceConnection, VoiceConnectionStatus.Ready, 20_000);
+                } catch {
+                    if (this.voiceConnection.state.status !== VoiceConnectionStatus.Destroyed) {
+                        this.voiceConnection.destroy();
+                    }
+                } finally {
+                    this.readyLock = false;
+                }
             }
         })
+
         this.voiceConnection.subscribe(this.audioPlayer)
         this._resource = null
     }
@@ -179,11 +230,14 @@ class MusicPlayer {
         )
         this.audioPlayer.stop();
     }
-
+    clearPlayer() {
+        this.musicQueue.empty();
+        this.playerEmbed.destroy();
+        this.audioPlayer.stop(true);
+    }
     leave() {
         this.queueLock = true;
-        this.musicQueue.empty();
-        this.audioPlayer.stop(true);
+        this.clearPlayer();
         this.textChannel.send(`Alright... I'm heading out now ~`)
         this.voiceConnection.disconnect()
     }
@@ -214,15 +268,21 @@ class MusicPlayer {
 
     async processQueue() {
         // If the queue is locked (already being processed), is empty, or the audio player is already playing something, return
-        if (this.queueLock || this.audioPlayer.state.status != AudioPlayerStatus.Idle || this.musicQueue.songs.length == 0) {
+        if (this.queueLock || this.audioPlayer.state.status != AudioPlayerStatus.Idle) {
+            return;
+        }
+
+        // Take the first item from the queue. This is NOT guaranteed to exist due to the nonexistent empty check above.
+        const nextTrack = this.musicQueue.shift();
+        if (!nextTrack) {
+            this.leave()
             return;
         }
         // Lock the queue to guarantee safe access
         this.queueLock = true;
 
 
-        // Take the first item from the queue. This is guaranteed to exist due to the non-empty check above.
-        const nextTrack = this.musicQueue.shift();
+
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
             this._resource = await nextTrack.createAudioResource();
@@ -237,6 +297,7 @@ class MusicPlayer {
 
         return this.processQueue();
     }
+
 }
 
 module.exports = MusicPlayer
