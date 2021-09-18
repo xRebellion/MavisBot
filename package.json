@@ -2,6 +2,9 @@
   "name": "mavis-bot",
   "version": "1.0.0",
   "description": "A simple bot for personal needs.",
+  "engines": {
+    "node": "16.9.1"
+  },
   "main": "start.js",
   "scripts": {
     "start": "node start.js"
