@@ -36,6 +36,6 @@ client.on('messageCreate', message => {
 
 client.login(process.env.MAVIS_BOT_TOKEN)
 
-http.client((request, response) => {
+http.createServer((request, response) => {
 	console.log("Received request to wake up! (" + Date.now() + ")")
 }).listen(process.env.PORT || 6969)
