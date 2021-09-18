@@ -9,6 +9,7 @@ class MusicPlayerEmbed {
         this.progressBar = ""
         this.song = null
         this.audioResource = null
+        this.destroyed = false;
     }
     buildEmbed() {
 
@@ -25,6 +26,7 @@ class MusicPlayerEmbed {
             .setDescription(this.progressBar)
             .setURL(this.song.getVideoURL()) // Song URL
             .setImage(this.song.thumbnail.url)
+            .setFooter(`Requested by ${this.song.owner.tag}`, this.song.owner.displayAvatarURL())
     }
     async send(song) {
         this.song = song
@@ -54,7 +56,15 @@ class MusicPlayerEmbed {
         this.progressBar = helper.createProgressBar(this.audioResource.playbackDuration, this.song.duration * 1000, "░", "▓")
     }
     destroy() {
-        this.embedMessage.delete();
+        if (!this.destroyed) {
+            this.embedMessage.delete();
+            this.textChannel = null
+            this.embedMessage = null
+            this.progressBar = ""
+            this.song = null
+            this.audioResource = null
+            this.destroyed = true;
+        }
     }
 }
 
