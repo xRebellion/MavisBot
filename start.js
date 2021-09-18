@@ -1,6 +1,5 @@
 var { Client } = require('discord.js');
 var logger = require('winston');
-var auth = require('./data/auth.json');
 var cmd = require('./modules/cmd')
 
 // Configure logger settings
@@ -33,4 +32,4 @@ client.on('messageCreate', message => {
 	cmd.processCmd(message)
 });
 
-client.login(auth.token)
+client.login(process.env.MAVIS_BOT_TOKEN)

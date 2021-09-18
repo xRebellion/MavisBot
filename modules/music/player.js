@@ -1,4 +1,3 @@
-const auth = require('../../data/auth.json');
 const helper = require('../helper')
 
 const MusicQueue = require("./queue");
@@ -78,7 +77,7 @@ class MusicPlayer {
 
             let params = {
                 part: "snippet",
-                key: auth.youtube_api_key,
+                key: process.env.YOUTUBE_API_KEY,
                 playlistId: playlistId,
                 maxResults: 50,
                 pageToken: null
@@ -117,7 +116,7 @@ class MusicPlayer {
         } else {
             const params = {
                 part: "id",
-                key: auth.youtube_api_key,
+                key: process.env.YOUTUBE_API_KEY,
                 q: q,
                 type: "video",
                 maxResults: 1

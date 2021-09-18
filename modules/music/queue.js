@@ -1,5 +1,4 @@
 const helper = require('../helper.js')
-const auth = require('../../data/auth.json');
 
 const axios = require('axios').default;
 
@@ -82,7 +81,7 @@ class MusicQueue {
                 const params = {
                     part: "contentDetails",
                     id: q,
-                    key: auth.youtube_api_key
+                    key: process.env.YOUTUBE_API_KEY
                 }
                 try {
                     response = await axios.get(YOUTUBE_VIDEOS_API_URL, {
