@@ -1,3 +1,3 @@
-![wings yum](https://repository-images.githubusercontent.com/254729642/aa86e562-473d-475b-ac00-39d2a3b673d6)
+![st,small,507x507-pad,600x600,f8f8f8 u1-cropped](https://user-images.githubusercontent.com/32483348/133907757-37365e0f-3c97-4e0a-becb-6d57b82ce1d7.png)
 # MavisBot
 Mavis (discord bot). Currently focusing on music, may branch to other features.
