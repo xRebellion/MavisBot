@@ -10,8 +10,8 @@ const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus, VoiceConnectionS
 
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/search"
 const YOUTUBE_PLAYLIST_API_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
-const YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v="
-const YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/playlist?list="
+const YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch"
+const YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/playlist"
 // TODO: Create module for embed-type music player
 class MusicPlayer {
 
@@ -78,7 +78,7 @@ class MusicPlayer {
                 /*
                     Once destroyed, stop the subscription
                 */
-                this.clearPlayer();
+                this.clear();
             } else if (
                 !this.readyLock &&
                 (newState.status === VoiceConnectionStatus.Connecting || newState.status === VoiceConnectionStatus.Signalling)
@@ -111,7 +111,8 @@ class MusicPlayer {
 
         let response = null
         if (q.startsWith(YOUTUBE_VIDEO_URL)) {
-            const videoId = q.slice(YOUTUBE_VIDEO_URL.length)
+            const url = new URL(q)
+            const videoId = url.searchParams.get('v')
             const song = await Song.from(videoId)
             song.owner = message.author
             this.musicQueue.addSongToIndex(song, queueNumber)
@@ -123,7 +124,8 @@ class MusicPlayer {
 
 
         } else if (q.startsWith(YOUTUBE_PLAYLIST_URL)) {
-            let playlistId = q.slice(YOUTUBE_PLAYLIST_URL.length)
+            const url = new URL(q)
+            let playlistId = url.searchParams.get('list')
             let songs = []
 
             let params = {
@@ -230,14 +232,15 @@ class MusicPlayer {
         )
         this.audioPlayer.stop();
     }
-    clearPlayer() {
+    clear() {
         this.musicQueue.empty();
         this.playerEmbed.destroy();
         this.audioPlayer.stop(true);
     }
+
     leave() {
         this.queueLock = true;
-        this.clearPlayer();
+        this.clear()
         this.textChannel.send(`Alright... I'm heading out now ~`)
         this.voiceConnection.disconnect()
     }
