@@ -1,6 +1,8 @@
 var { Client } = require('discord.js');
 var logger = require('winston');
-var cmd = require('./modules/cmd')
+var cmd = require('./modules/cmd');
+var http = require('http');
+const { time } = require('console');
 
 // Configure logger settings
 logger.remove(logger.transports.Console);
@@ -33,3 +35,7 @@ client.on('messageCreate', message => {
 });
 
 client.login(process.env.MAVIS_BOT_TOKEN)
+
+http.client((request, response) => {
+	console.log("Received request to wake up! (" + Date.now() + ")")
+}).listen(process.env.PORT || 6969)
