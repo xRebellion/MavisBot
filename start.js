@@ -37,7 +37,7 @@ client.on('messageCreate', message => {
 client.login(process.env.MAVIS_BOT_TOKEN)
 
 http.createServer((request, response) => {
-	console.log("Received request to wake up! (" + new Date(Date.now().toLocaleString('Asia/Jakarta')).set + ")")
+	console.log("Received request to wake up! (" + Date.now().toLocaleString("en-US", { timezone: 'Asia/Jakarta' }) + ")")
 	response.writeHead(200)
 	response.end('Pong!')
 }).listen(process.env.PORT || 6969)
