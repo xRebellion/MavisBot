@@ -13,80 +13,84 @@ function processCmd(message) {
         .setColor(0x027059)
         .setDescription(msgs.HELP);
     if (message.content.substring(0, 2) == prefix) {
-        var args = message.content.substring(2).split(' ');
-        var cmd = args[0];
-        args = args.splice(1)
-        var commandList = ['ping', 'register', 'reactall', 'getid']
-        if (registered.id.includes(message.author.id)) {
+        try {
+            var args = message.content.substring(2).split(' ');
+            var cmd = args[0];
+            args = args.splice(1)
+            var commandList = ['ping', 'register', 'reactall', 'getid']
+            if (registered.id.includes(message.author.id)) {
+                switch (cmd) {
+                    // m/ping
+                    case 'ping':
+                        message.channel.send('Pong!~');
+                        break;
+                    case 'getid':
+                        message.channel.send('Your ID is: ' + message.author.id)
+                        break;
+                    case 'getChannelId':
+                        message.channel.send(`This channel ID is ${message.channel.id}! ~`);
+                        break;
+                    case 'getParentId':
+                        message.channel.send(`This channel ParentID is ${message.channel.parentID}! ~`);
+                        break;
+                    case 'getVoiceChannelId':
+                        message.channel.send(`This voice channel ID is ${message.member.voice.channelID}`)
+                        break;
+                    case 'getGuildId':
+                        message.channel.send(`This Guild's ID is ${message.guild.id}`)
+                        break;
+                    case 'registerDefaultVoiceChannel':
+                        message.channel.send('Default Voice Channel set! ~');
+                        setDefaultVoice(message.guild.id, message.member.voice.channelID);
+                        break;
+                }
+            }
+            if (commandList.includes(cmd) && !registered.id.includes(message.author.id)) {
+                message.channel.send("You can't do that...")
+            }
             switch (cmd) {
-                // m/ping
-                case 'ping':
-                    message.channel.send('Pong!~');
+                case 'peekpicture':
+                    fun.peekPicture(message, args);
                     break;
-                case 'getid':
-                    message.channel.send('Your ID is: ' + message.author.id)
+
+                case 'leave':
+                    music.leave(message);
                     break;
-                case 'getChannelId':
-                    message.channel.send(`This channel ID is ${message.channel.id}! ~`);
+                case 'move':
+                    music.move(message);
                     break;
-                case 'getParentId':
-                    message.channel.send(`This channel ParentID is ${message.channel.parentID}! ~`);
+                case 'np':
+                case 'nowplaying':
+                    music.nowPlaying(message);
                     break;
-                case 'getVoiceChannelId':
-                    message.channel.send(`This voice channel ID is ${message.member.voice.channelID}`)
+                case 'play':
+                    music.execute(message, -1);
                     break;
-                case 'getGuildId':
-                    message.channel.send(`This Guild's ID is ${message.guild.id}`)
+                case 'playtop':
+                    music.execute(message, 0);
                     break;
-                case 'registerDefaultVoiceChannel':
-                    message.channel.send('Default Voice Channel set! ~');
-                    setDefaultVoice(message.guild.id, message.member.voice.channelID);
+                case 'q':
+                case 'queue':
+                    music.viewQueue(message);
+                    break;
+                case 'shuffle':
+                    music.shuffle(message);
+                    break;
+                case 'skip':
+                    music.skip(message);
+                    break;
+                case 'help':
+                    message.channel.send({ embeds: [helpEmbed] })
+                    break;
+                case 'e':
+                    fun.me(message, args);
+                    break;
+                case 'sticker':
+                    fun.sticker(message, args);
                     break;
             }
-        }
-        if (commandList.includes(cmd) && !registered.id.includes(message.author.id)) {
-            message.channel.send("You can't do that...")
-        }
-        switch (cmd) {
-            case 'peekpicture':
-                fun.peekPicture(message, args);
-                break;
-
-            case 'move':
-                music.move(message);
-                break;
-            case 'leave':
-                music.leave(message);
-                break;
-            case 'np':
-            case 'nowplaying':
-                music.nowPlaying(message);
-                break;
-            case 'play':
-                music.execute(message, -1);
-                break;
-            case 'playtop':
-                music.execute(message, 0);
-                break;
-            case 'q':
-            case 'queue':
-                music.viewQueue(message);
-                break;
-            case 'shuffle':
-                music.shuffle(message);
-                break;
-            case 'skip':
-                music.skip(message);
-                break;
-            case 'help':
-                message.channel.send({ embeds: [helpEmbed] })
-                break;
-            case 'e':
-                fun.me(message, args);
-                break;
-            case 'sticker':
-                fun.sticker(message, args);
-                break;
+        } catch (err) {
+            return console.error(`Error on command ${cmd} : ${err}`)
         }
     }
 }
