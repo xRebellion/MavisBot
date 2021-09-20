@@ -16,6 +16,7 @@ const YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/playlist"
 class MusicPlayer {
 
     constructor(textChannel, voiceChannel, volume) {
+        console.time('MusicPlayer.constructor')
         this.textChannel = textChannel
         this.voiceChannel = voiceChannel;
         this.audioPlayer = createAudioPlayer();
@@ -29,6 +30,7 @@ class MusicPlayer {
         this.playerEmbed = new MusicPlayerEmbed(textChannel)
         this.queueLock = false;
         this.readyLock = false;
+        this.timeout = null;
 
         this.playerEmbed.send(this.musicQueue.nowPlaying);
         // Configure audio player
@@ -36,10 +38,16 @@ class MusicPlayer {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
+                this.timeout = setTimeout(() => {
+                    this.leave()
+                }, 300000);
                 this.playerEmbed.stopProgressBar();
+                console.time('audioPlayerStateChange.processQueue')
                 void this.processQueue();
+                console.timeEnd('audioPlayerStateChange.processQueue')
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
+                clearTimeout(this.timeout);
                 this.playerEmbed.resend(this.musicQueue.nowPlaying)
             }
         });
@@ -103,13 +111,16 @@ class MusicPlayer {
 
         this.voiceConnection.subscribe(this.audioPlayer)
         this._resource = null
+        console.timeEnd('MusicPlayer.constructor')
     }
 
     async enqueue(message, queueNumber) {
+        console.time('enqueue')
         const args = message.content.split(' ');
         const q = args.splice(1).join(" ")
 
         let response = null
+
         if (q.startsWith(YOUTUBE_VIDEO_URL)) {
             const url = new URL(q)
             const videoId = url.searchParams.get('v')
@@ -201,6 +212,7 @@ class MusicPlayer {
         }
 
         this.processQueue()
+        console.timeEnd('enqueue')
     }
 
     move(message) {
@@ -270,21 +282,24 @@ class MusicPlayer {
     }
 
     async processQueue() {
+        console.time('processQueue')
         // If the queue is locked (already being processed), is empty, or the audio player is already playing something, return
         if (this.queueLock || this.audioPlayer.state.status != AudioPlayerStatus.Idle) {
+            console.timeEnd('processQueue')
             return;
         }
 
-        // Take the first item from the queue. This is NOT guaranteed to exist due to the nonexistent empty check above.
+        // Take the first item from the queue. This is NOT guaranteed to exist due to the nonexistent empty check above, but we actually want that.
         const nextTrack = this.musicQueue.shift();
         if (!nextTrack) {
-            this.leave()
+            this.playerEmbed.song = nextTrack
+            this.playerEmbed.update();
+            console.timeEnd('processQueue')
             return;
         }
+
         // Lock the queue to guarantee safe access
         this.queueLock = true;
-
-
 
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
@@ -298,6 +313,7 @@ class MusicPlayer {
             this.queueLock = false;
         }
 
+        console.timeEnd('processQueue')
         return this.processQueue();
     }
 
