@@ -38,6 +38,10 @@ class MusicPlayer {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
+                if (this.musicQueue.isEmpty()) {
+                    this.playerEmbed.song = null
+                    this.playerEmbed.update()
+                }
                 this.timeout = setTimeout(() => {
                     this.leave()
                 }, 300000);
@@ -283,17 +287,8 @@ class MusicPlayer {
 
     async processQueue() {
         console.time('processQueue')
-        // If the queue is locked (already being processed), is empty, or the audio player is already playing something, return
-        if (this.queueLock || this.audioPlayer.state.status != AudioPlayerStatus.Idle) {
-            console.timeEnd('processQueue')
-            return;
-        }
-
-        // Take the first item from the queue. This is NOT guaranteed to exist due to the nonexistent empty check above, but we actually want that.
-        const nextTrack = this.musicQueue.shift();
-        if (!nextTrack) {
-            this.playerEmbed.song = nextTrack
-            this.playerEmbed.update();
+        // If the queue is locked (already being processed), is empty, or the audio player is already caching
+        if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource) || !this.musicQueue.songs[0]) {
             console.timeEnd('processQueue')
             return;
         }
@@ -301,9 +296,39 @@ class MusicPlayer {
         // Lock the queue to guarantee safe access
         this.queueLock = true;
 
+        if (this._resource && !this._nextResource) { // second time queue, cache the next song
+            console.log("2")
+            this._nextResource = await this.musicQueue.songs[0].createAudioResource();
+            console.timeEnd('processQueue')
+            this.queueLock = false;
+            return;
+        }
+
+        // Take the first item from the queue
+        const track = this.musicQueue.shift();
+        if (!track) {
+            this.playerEmbed.song = track // null
+            this.playerEmbed.update();
+            console.timeEnd('processQueue')
+            this.queueLock = false;
+            return;
+        }
+
+
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-            this._resource = await nextTrack.createAudioResource();
+            if (!this._resource && !this._nextResource) { // first time queue
+                this._resource = await track.createAudioResource();
+            } else { // on consequent (2+) and last song.
+                this._resource = this._nextResource;
+                if (this.musicQueue.songs[0]) {
+                    this.musicQueue.songs[0].createAudioResource().then(resource => {
+                        this._nextResource = resource
+                    });
+                } else {
+                    this._nextResource = null
+                }
+            }
             this.playerEmbed.setAudioResource(this._resource)
             this.playerEmbed.startProgressBar();
             this.audioPlayer.play(this._resource);
