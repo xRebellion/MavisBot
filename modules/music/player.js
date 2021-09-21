@@ -16,7 +16,6 @@ const YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/playlist"
 class MusicPlayer {
 
     constructor(textChannel, voiceChannel, volume) {
-        console.time('MusicPlayer.constructor')
         this.textChannel = textChannel
         this.voiceChannel = voiceChannel;
         this.audioPlayer = createAudioPlayer();
@@ -115,21 +114,18 @@ class MusicPlayer {
 
         this.voiceConnection.subscribe(this.audioPlayer)
         this._resource = null
-        console.timeEnd('MusicPlayer.constructor')
     }
 
-    async enqueue(message, queueNumber) {
+    async enqueue(query, author, queueNumber) {
         console.time('enqueue')
-        const args = message.content.split(' ');
-        const q = args.splice(1).join(" ")
 
         let response = null
 
-        if (q.startsWith(YOUTUBE_VIDEO_URL)) {
-            const url = new URL(q)
+        if (query.startsWith(YOUTUBE_VIDEO_URL)) {
+            const url = new URL(query)
             const videoId = url.searchParams.get('v')
             const song = await Song.from(videoId)
-            song.owner = message.author
+            song.owner = author
             this.musicQueue.addSongToIndex(song, queueNumber)
 
             if (!this.musicQueue.isEmpty()) {
@@ -138,8 +134,8 @@ class MusicPlayer {
             }
 
 
-        } else if (q.startsWith(YOUTUBE_PLAYLIST_URL)) {
-            const url = new URL(q)
+        } else if (query.startsWith(YOUTUBE_PLAYLIST_URL)) {
+            const url = new URL(query)
             let playlistId = url.searchParams.get('list')
             let songs = []
 
@@ -166,7 +162,7 @@ class MusicPlayer {
                         item.snippet.thumbnails.standard,
                         -1,
                         item.snippet.videoOwnerChannelTitle,
-                        message.author
+                        author
                     )
 
                     songs.push(song)
@@ -185,7 +181,7 @@ class MusicPlayer {
             const params = {
                 part: "id",
                 key: process.env.YOUTUBE_API_KEY,
-                q: q,
+                q: query,
                 type: "video",
                 maxResults: 1
             }
@@ -200,7 +196,7 @@ class MusicPlayer {
             try {
                 const videoId = response.data.items[0].id.videoId
                 const song = await Song.from(videoId)
-                song.owner = message.author
+                song.owner = author
 
                 this.musicQueue.addSongToIndex(song, queueNumber)
                 if (!this.musicQueue.isEmpty()) {
@@ -219,14 +215,8 @@ class MusicPlayer {
         console.timeEnd('enqueue')
     }
 
-    move(message) {
-        let args = message.content.split(' ');
-        args = args.splice(1)
-        let from = parseInt(args[0]) - 1
-        let to = 0
-        if (args[1]) {
-            to = parseInt(args[1]) - 1
-        }
+    move(from, to) {
+
         this.musicQueue.move(from, to)
         helper.sendFadingMessage(
             this.textChannel,
@@ -270,12 +260,8 @@ class MusicPlayer {
         )
     }
 
-    viewQueue(message) {
-        const args = message.content.split(' ');
-        let page = 1
-        if (args.length > 1) {
-            page = args.splice(1).join(" ");
-        }
+    viewQueue(page) {
+
         let embed = new MusicQueueEmbed(this.musicQueue)
 
         helper.sendFadingMessage(

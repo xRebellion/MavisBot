@@ -1,11 +1,13 @@
 var { MessageEmbed } = require('discord.js');
-var music = require('./music/main.js')
-var fun = require('./fun.js')
-const msgs = require('../data/messages.js')
+var music = require('../music/main.js')
+var fun = require('../fun.js')
+const msgs = require('../../data/messages.js')
 const prefix = 'm/';
-const registered = require('../data/deprecated/registered.deprecated.json');
+const registered = require('../../data/deprecated/registered.deprecated.json');
 
-function processCmd(message) {
+
+
+async function processCmd(message) {
     if (message.author.bot) return;
     if (!message.content.startsWith(prefix)) return;
     const helpEmbed = new MessageEmbed()
@@ -16,7 +18,9 @@ function processCmd(message) {
         try {
             var args = message.content.substring(2).split(' ');
             var cmd = args[0];
+            let songQuery = args.splice(1).join(" ")
             args = args.splice(1)
+
 
             if (registered.id.includes(message.author.id)) {
                 switch (cmd) {
@@ -58,7 +62,7 @@ function processCmd(message) {
                     music.leave(message);
                     break;
                 case 'move':
-                    music.move(message);
+                    music.move(message, args[0], args[1]);
                     break;
                 case 'np':
                 case 'nowplaying':
@@ -66,14 +70,14 @@ function processCmd(message) {
                     break;
                 case 'p':
                 case 'play':
-                    music.execute(message, -1);
+                    music.execute(message, songQuery, -1);
                     break;
                 case 'playtop':
-                    music.execute(message, 0);
+                    music.execute(message, songQuery, 0);
                     break;
                 case 'q':
                 case 'queue':
-                    music.viewQueue(message);
+                    music.viewQueue(message, args[0]);
                     break;
                 case 'shuffle':
                     music.shuffle(message);
@@ -105,5 +109,5 @@ async function fetchGuild(m) {
 }
 
 module.exports = {
-    processCmd: processCmd,
+    processCmd,
 }

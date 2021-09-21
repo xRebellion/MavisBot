@@ -3,69 +3,116 @@ const MusicPlayer = require('./player.js');
 
 const serverMap = new Map();
 
-async function execute(message, queueNumber) {
-    let serverPlayer = serverMap.get(message.guild.id)
+// async function execute(guildId, voiceChannel, requester, query)
+async function execute(messageOrInteraction, query, queueNumber) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+    const requester = messageOrInteraction.author
 
-    const voiceChannel = message.member.voice.channel;
+    let serverPlayer = serverMap.get(messageOrInteraction.guild.id)
 
-    const permissions = voiceChannel.permissionsFor(message.client.user);
+    const permissions = voiceChannel.permissionsFor(messageOrInteraction.client.user);
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
-        return message.channel.send(msgs.NO_MUSIC_PERMISSION);
+        return textChannel.send(msgs.NO_MUSIC_PERMISSION);
     }
 
     if (!serverPlayer) {
         serverPlayer = new MusicPlayer(
-            message.channel,
+            textChannel,
             voiceChannel,
             1
         )
-        serverMap.set(message.guild.id, serverPlayer);
-        serverPlayer.enqueue(message, queueNumber);
+        serverMap.set(guildId, serverPlayer);
+        serverPlayer.enqueue(query, requester, queueNumber);
     } else {
-        serverPlayer.enqueue(message, queueNumber);
+        serverPlayer.enqueue(query, requester, queueNumber);
     }
 }
 
-function skip(message) {
-    const serverPlayer = serverMap.get(message.guild.id)
-    if (!serverPlayer) return message.channel.send(msgs.MUSIC_SKIP);
-    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+function skip(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
+    if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
     serverPlayer.skip()
 }
 
 
-function leave(message) {
-    const serverPlayer = serverMap.get(message.guild.id)
-    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
-    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+function leave(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
+    if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
     serverPlayer.leave()
-    serverMap.delete(message.guild.id);
-}
-function move(message) {
-    const serverPlayer = serverMap.get(message.guild.id)
-    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
-    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
-    serverPlayer.move(message);
+    serverMap.delete(guildId);
 }
 
-function shuffle(message) {
-    const serverPlayer = serverMap.get(message.guild.id)
-    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
-    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+function move(messageOrInteraction, from, to) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    const serverPlayer = serverMap.get(guildId)
+
+
+    if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
+    if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    if (!from) {
+        textChannel.send('Missing move arguments!')
+    } else {
+        from = parseInt(from) - 1
+        if (to) {
+            to = parseInt(args[1]) - 1
+        } else {
+            to = 0
+        }
+        serverPlayer.move(from, to);
+    }
+}
+
+function shuffle(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
+    if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+
     serverPlayer.shuffle()
 }
 
-function viewQueue(message) {
-    const serverPlayer = serverMap.get(message.guild.id)
-    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
-    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
-    serverPlayer.viewQueue(message)
+function viewQueue(messageOrInteraction, page) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
+    if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+
+    if (!page) {
+        page = 1
+    }
+    serverPlayer.viewQueue(page)
 }
 
-function nowPlaying(message) {
-    const serverPlayer = serverMap.get(message.guild.id)
-    if (!serverPlayer) return message.channel.send(`What are you trying to do? I'm not in any voice rooms ~ 'w'`);
-    if (message.member.voice.channel != serverPlayer.voiceChannel) return message.channel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+function nowPlaying(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
+    if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+
     serverPlayer.bumpPlayer()
 }
 
