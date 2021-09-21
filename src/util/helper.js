@@ -79,13 +79,6 @@ function _msToReadableDuration(ms) {
         return new Date(ms).toISOString().substr(11, 8)
     }
 }
-function handleReply(messageOrInteraction, text) {
-    if (messageOrInteraction instanceof Message) {
-        messageOrInteraction.channel.send(text);
-    } else {
-        messageOrInteraction.reply(text)
-    }
-}
 
 module.exports = {
     getUserFromMention,
@@ -93,6 +86,5 @@ module.exports = {
     delay,
     ptToSeconds,
     sendFadingMessage,
-    createProgressBar,
-    handleReply
+    createProgressBar
 }

@@ -1,4 +1,4 @@
-const helper = require('../helper')
+const helper = require('../util/helper')
 
 const MusicQueue = require("./queue");
 const Song = require("./song.js");
@@ -120,6 +120,7 @@ class MusicPlayer {
         console.time('enqueue')
 
         let response = null
+        let reply = "empty"
 
         if (query.startsWith(YOUTUBE_VIDEO_URL)) {
             const url = new URL(query)
@@ -128,11 +129,8 @@ class MusicPlayer {
             song.owner = author
             this.musicQueue.addSongToIndex(song, queueNumber)
 
-            if (!this.musicQueue.isEmpty()) {
-                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
-                this.textChannel.send({ embeds: [enqueueEmbed.build()] })
-            }
-
+            const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+            reply = { embeds: [enqueueEmbed.build()] }
 
         } else if (query.startsWith(YOUTUBE_PLAYLIST_URL)) {
             const url = new URL(query)
@@ -172,11 +170,8 @@ class MusicPlayer {
 
             this.musicQueue.addSongsToIndex(songs, queueNumber);
             this.musicQueue.updateDurations();
-            helper.sendFadingMessage(
-                this.textChannel,
-                5000,
-                `Queued **${songs.length}** songs!`
-            )
+            reply = `Queued **${songs.length}** songs!`
+
         } else {
             const params = {
                 part: "id",
@@ -199,30 +194,25 @@ class MusicPlayer {
                 song.owner = author
 
                 this.musicQueue.addSongToIndex(song, queueNumber)
-                if (!this.musicQueue.isEmpty()) {
-                    const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
 
-                    this.textChannel.send({ embeds: [enqueueEmbed.build()] })
-                }
+                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+                reply = { embeds: [enqueueEmbed.build()] }
+
             } catch (err) {
                 console.log(err)
-                this.textChannel.send("Music Not Found!")
+                reply = "Music Not Found!"
             }
 
         }
 
         this.processQueue()
         console.timeEnd('enqueue')
+        return reply
     }
 
     move(from, to) {
-
         this.musicQueue.move(from, to)
-        helper.sendFadingMessage(
-            this.textChannel,
-            5000,
-            `Moved ${this.musicQueue.songs[to].title} to position ${to + 1}!`
-        )
+        return `Moved **${this.musicQueue.songs[to].title}** to position **${to + 1}**!`
     }
 
     bumpPlayer() {
@@ -231,13 +221,10 @@ class MusicPlayer {
     }
 
     skip() {
-        helper.sendFadingMessage(
-            this.textChannel,
-            5000,
-            `Skipping **${this.musicQueue.nowPlaying.title}**...`
-        )
         this.audioPlayer.stop();
+        return `Skipping **${this.musicQueue.nowPlaying.title}**...`
     }
+
     clear() {
         this.musicQueue.empty();
         this.playerEmbed.destroy();
@@ -247,28 +234,21 @@ class MusicPlayer {
     leave() {
         this.queueLock = true;
         this.clear()
-        this.textChannel.send(`Alright... I'm heading out now ~`)
         this.voiceConnection.disconnect()
+        return `Alright... I'm heading out now ~`
     }
 
     shuffle() {
         this.musicQueue.shuffle()
-        helper.sendFadingMessage(
-            this.textChannel,
-            5000,
-            `Shuffled **${this.musicQueue.songs.length}** songs!`
-        )
+        return `Shuffled **${this.musicQueue.songs.length}** songs!`
     }
 
     viewQueue(page) {
 
         let embed = new MusicQueueEmbed(this.musicQueue)
 
-        helper.sendFadingMessage(
-            this.textChannel,
-            30000,
-            { embeds: [embed.build(page)] }
-        )
+        return { embeds: [embed.build(page)] }
+
     }
 
     async processQueue() {

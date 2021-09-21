@@ -1,4 +1,3 @@
-const { Message } = require('discord.js');
 const msgs = require('../../data/messages.js');
 const MusicPlayer = require('./player.js');
 
@@ -6,16 +5,17 @@ const serverMap = new Map();
 
 // async function execute(guildId, voiceChannel, requester, query)
 async function execute(messageOrInteraction, query, queueNumber) {
+    messageOrInteraction.deferReply();
     const guildId = messageOrInteraction.guild.id
     const textChannel = messageOrInteraction.channel
     const voiceChannel = messageOrInteraction.member.voice.channel
-    const requester = messageOrInteraction.author
+    const requester = messageOrInteraction.member.user
 
     let serverPlayer = serverMap.get(messageOrInteraction.guild.id)
 
     const permissions = voiceChannel.permissionsFor(messageOrInteraction.client.user);
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
-        return textChannel.send(msgs.NO_MUSIC_PERMISSION);
+        return messageOrInteraction.editReply(msgs.NO_MUSIC_PERMISSION);
     }
 
     if (!serverPlayer) {
@@ -25,9 +25,10 @@ async function execute(messageOrInteraction, query, queueNumber) {
             1
         )
         serverMap.set(guildId, serverPlayer);
-        serverPlayer.enqueue(query, requester, queueNumber);
+
+        messageOrInteraction.editReply(await serverPlayer.enqueue(query, requester, queueNumber));
     } else {
-        serverPlayer.enqueue(query, requester, queueNumber);
+        messageOrInteraction.editReply(await serverPlayer.enqueue(query, requester, queueNumber));
     }
 }
 
@@ -39,7 +40,7 @@ function skip(messageOrInteraction) {
     const serverPlayer = serverMap.get(guildId)
     if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
     if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
-    serverPlayer.skip()
+    messageOrInteraction.reply(serverPlayer.skip())
 }
 
 
@@ -51,7 +52,7 @@ function leave(messageOrInteraction) {
     const serverPlayer = serverMap.get(guildId)
     if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
     if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
-    serverPlayer.leave()
+    messageOrInteraction.reply(serverPlayer.leave());
     serverMap.delete(guildId);
 }
 
@@ -67,13 +68,13 @@ function move(messageOrInteraction, from, to) {
     if (!from) {
         textChannel.send('Missing move arguments!')
     } else {
-        from = parseInt(from) - 1
+        from = from - 1
         if (to) {
-            to = parseInt(args[1]) - 1
+            to = args[1] - 1
         } else {
             to = 0
         }
-        serverPlayer.move(from, to)
+        messageOrInteraction.reply(serverPlayer.move(from, to))
     }
 }
 
@@ -86,7 +87,7 @@ function shuffle(messageOrInteraction) {
     if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
     if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
 
-    serverPlayer.shuffle()
+    messageOrInteraction.reply(serverPlayer.shuffle());
 }
 
 function viewQueue(messageOrInteraction, page) {
@@ -101,7 +102,7 @@ function viewQueue(messageOrInteraction, page) {
     if (!page) {
         page = 1
     }
-    serverPlayer.viewQueue(page)
+    messageOrInteraction.reply(serverPlayer.viewQueue(page))
 }
 
 function nowPlaying(messageOrInteraction) {

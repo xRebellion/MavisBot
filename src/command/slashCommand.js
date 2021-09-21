@@ -1,3 +1,6 @@
+const { MessageEmbed } = require('discord.js');
+const msgs = require('../../data/messages.js')
+var music = require('../music/main.js')
 
 async function processSlashCmd(interaction) {
     const helpEmbed = new MessageEmbed()
@@ -11,7 +14,11 @@ async function processSlashCmd(interaction) {
                 music.leave(interaction);
                 break;
             case 'move':
-                music.move(interaction);
+                music.move(
+                    interaction,
+                    interaction.options.getInteger('from'),
+                    interaction.options.getInteger('to')
+                );
                 break;
             case 'np':
             case 'nowplaying':
@@ -19,14 +26,14 @@ async function processSlashCmd(interaction) {
                 break;
             case 'p':
             case 'play':
-                music.execute(interaction, -1);
+                music.execute(interaction, interaction.options.getString('song'), -1);
                 break;
             case 'playtop':
-                music.execute(interaction, 0);
+                music.execute(interaction, interaction.options.getString('song'), 0);
                 break;
             case 'q':
             case 'queue':
-                music.viewQueue(interaction);
+                music.viewQueue(interaction, interaction.options.getInteger('page'));
                 break;
             case 'shuffle':
                 music.shuffle(interaction);
@@ -39,7 +46,7 @@ async function processSlashCmd(interaction) {
                 break;
         }
     } catch (err) {
-        return console.error(`Error on command ${cmd} : ${err}`)
+        return console.error(`Error on command ${interaction.commandName} : ${err}`)
     }
 }
 

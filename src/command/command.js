@@ -4,6 +4,7 @@ var fun = require('../fun.js')
 const msgs = require('../../data/messages.js')
 const prefix = 'm/';
 const registered = require('../../data/deprecated/registered.deprecated.json');
+const slashCommandList = require('./list.js');
 
 
 
@@ -49,6 +50,10 @@ async function processCmd(message) {
                         break;
                     case 'getGuildList':
                         fetchGuild(message)
+                        break;
+                    case 'deployCommands':
+                        message.guild.commands.set(slashCommandList)
+                        message.reply('Deployed!');
                         break;
                 }
             }

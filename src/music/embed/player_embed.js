@@ -1,4 +1,4 @@
-const helper = require('../../helper.js')
+const helper = require('../../util/helper.js')
 
 const { MessageEmbed } = require("discord.js");
 
