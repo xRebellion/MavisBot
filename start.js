@@ -1,7 +1,7 @@
 var { Client } = require('discord.js');
 var logger = require('winston');
-var command = require('./modules/command/command');
-var slashCommand = require('./modules/command/slashCommand');
+var command = require('./src/command/command');
+var slashCommand = require('./src/command/slashCommand');
 
 // Configure logger settings
 logger.remove(logger.transports.Console);

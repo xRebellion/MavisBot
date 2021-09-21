@@ -1,3 +1,4 @@
+const { Message } = require('discord.js');
 const msgs = require('../../data/messages.js');
 const MusicPlayer = require('./player.js');
 
@@ -60,10 +61,9 @@ function move(messageOrInteraction, from, to) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-
-
     if (!serverPlayer) return textChannel.send(msgs.MUSIC_PLAYER_NOT_PLAYING);
     if (voiceChannel != serverPlayer.voiceChannel) return textChannel.send(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+
     if (!from) {
         textChannel.send('Missing move arguments!')
     } else {
@@ -73,7 +73,7 @@ function move(messageOrInteraction, from, to) {
         } else {
             to = 0
         }
-        serverPlayer.move(from, to);
+        serverPlayer.move(from, to)
     }
 }
 
