@@ -1,6 +1,7 @@
 const { MessageEmbed } = require('discord.js');
 const msgs = require('../../data/messages.js')
 var music = require('../music/main.js')
+var fun = require('../fun.js')
 
 async function processSlashCmd(interaction) {
     const helpEmbed = new MessageEmbed()
@@ -43,6 +44,12 @@ async function processSlashCmd(interaction) {
                 break;
             case 'help':
                 interaction.channel.send({ embeds: [helpEmbed] })
+                break;
+            case 'me':
+                fun.me(interaction, interaction.options.getString('id'));
+                break;
+            case 'sticker':
+                fun.sticker(interaction, interaction.options.getString('id'));
                 break;
         }
     } catch (err) {

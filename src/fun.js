@@ -17,13 +17,11 @@ function peekPicture(message, args) {
 function me(message, args) {
     var me = fs.readdirSync('./img/mavis/');
     var pick = null
-    if (args[0] > me.length || args[0] <= 0) {
-        message.channel.send("I don't have that .w. ~");
-        return;
+    if (!args) {
+        pick = me[Math.floor(Math.random() * me.length)]
     }
-    if (!args[0]) pick = me[Math.floor(Math.random() * me.length)]
-    else pick = me[args[0] - 1]
-    message.channel.send({
+    else pick = args
+    message.reply({
         files: [
             "./img/mavis/" + pick
         ]
@@ -33,16 +31,16 @@ function sticker(message, args) {
     var emotes = fs.readdirSync('./img/sticker/')
     var pick = null
     for (const name of emotes) {
-        if (name.startsWith(args[0])) {
+        if (name.startsWith(args)) {
             pick = name;
             break;
         }
     }
     if (!pick) {
-        message.channel.send("I don't have that .w. ~");
+        message.reply("I don't have that .w. ~");
         return;
     }
-    message.channel.send({
+    message.reply({
         files: [
             "./img/sticker/" + pick
         ]

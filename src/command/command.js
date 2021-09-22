@@ -19,7 +19,7 @@ async function processCmd(message) {
         try {
             var args = message.content.substring(2).split(' ');
             var cmd = args[0];
-            let songQuery = args.splice(1).join(" ")
+            let joinedArgs = args.splice(1).join(" ")
             args = args.splice(1)
 
 
@@ -75,10 +75,10 @@ async function processCmd(message) {
                     break;
                 case 'p':
                 case 'play':
-                    music.execute(message, songQuery, -1);
+                    music.execute(message, joinedArgs, -1);
                     break;
                 case 'playtop':
-                    music.execute(message, songQuery, 0);
+                    music.execute(message, joinedArgs, 0);
                     break;
                 case 'q':
                 case 'queue':
@@ -91,13 +91,13 @@ async function processCmd(message) {
                     music.skip(message);
                     break;
                 case 'help':
-                    message.channel.send({ embeds: [helpEmbed] })
+                    message.reply({ embeds: [helpEmbed] })
                     break;
                 case 'e':
-                    fun.me(message, args);
+                    fun.me(message, joinedArgs);
                     break;
                 case 'sticker':
-                    fun.sticker(message, args);
+                    fun.sticker(message, joinedArgs);
                     break;
             }
         } catch (err) {
