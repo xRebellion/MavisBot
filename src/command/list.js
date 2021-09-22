@@ -62,5 +62,27 @@ module.exports = [
     {
         name: 'leave',
         description: 'just straight up leaving the voice room because you asked me to .w.'
+    },
+    {
+        name: 'me',
+        description: 'show me',
+        options: [
+            {
+                name: 'id',
+                type: 'STRING',
+                description: 'image id',
+            }
+        ]
+    },
+    {
+        name: 'sticker',
+        description: 'giff sticker',
+        options: [
+            {
+                name: 'id',
+                type: 'STRING',
+                description: 'sticker id',
+            }
+        ]
     }
 ]
