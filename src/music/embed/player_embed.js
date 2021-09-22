@@ -1,4 +1,4 @@
-const helper = require('../../helper.js')
+const helper = require('../../util/helper.js')
 
 const { MessageEmbed } = require("discord.js");
 
@@ -12,11 +12,10 @@ class MusicPlayerEmbed {
         this.destroyed = false;
     }
     buildEmbed() {
-
         if (!this.song) return new MessageEmbed()
             .setColor(0x027059)
             .setAuthor("Music Player")
-            .setTitle("Loading...") // Song Name
+            .setTitle("Waiting...") // Song Name
             .setURL("") // Song URL
         this.progressBar = helper.createProgressBar(this.audioResource.playbackDuration, this.song.duration * 1000, "░", "▓")
         return new MessageEmbed()

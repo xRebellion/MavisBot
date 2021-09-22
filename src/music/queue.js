@@ -1,4 +1,4 @@
-const helper = require('../helper.js')
+const helper = require('../util/helper.js')
 
 const axios = require('axios').default;
 
@@ -99,12 +99,7 @@ class MusicQueue {
         }
 
         for (let i = 0; i < this.songs.length; i++) {
-            try {
-                this.songs[i].duration = helper.ptToSeconds(details[i].contentDetails.duration)
-            } catch (err) {
-                console.log(details[i])
-                return console.error(err);
-            }
+            this.songs[i].duration = helper.ptToSeconds(details[i].contentDetails.duration)
         }
 
 

@@ -1,8 +1,7 @@
 var { Client } = require('discord.js');
 var logger = require('winston');
-var cmd = require('./modules/cmd');
-var http = require('http');
-const { time } = require('console');
+var command = require('./src/command/command');
+var slashCommand = require('./src/command/slashCommand');
 
 // Configure logger settings
 logger.remove(logger.transports.Console);
@@ -30,9 +29,8 @@ client.once('disconnect', () => {
 
 
 
-client.on('messageCreate', message => {
-	cmd.processCmd(message)
-});
+client.on('messageCreate', command.processCmd)
+client.on('interactionCreate', slashCommand.processSlashCmd)
 
 client.login(process.env.MAVIS_BOT_TOKEN)
 

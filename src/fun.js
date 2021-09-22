@@ -1,4 +1,4 @@
-var helper = require("./helper.js")
+var helper = require("./util/helper.js")
 var fs = require('fs');
 
 function peekPicture(message, args) {

@@ -1,4 +1,4 @@
-const helper = require('../helper')
+const helper = require('../util/helper')
 
 const MusicQueue = require("./queue");
 const Song = require("./song.js");
@@ -29,6 +29,7 @@ class MusicPlayer {
         this.playerEmbed = new MusicPlayerEmbed(textChannel)
         this.queueLock = false;
         this.readyLock = false;
+        this.timeout = null;
 
         this.playerEmbed.send(this.musicQueue.nowPlaying);
         // Configure audio player
@@ -36,10 +37,20 @@ class MusicPlayer {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
+                if (this.musicQueue.isEmpty()) {
+                    this.playerEmbed.song = null
+                    this.playerEmbed.update()
+                }
+                this.timeout = setTimeout(() => {
+                    this.leave()
+                }, 300000);
                 this.playerEmbed.stopProgressBar();
+                console.time('audioPlayerStateChange.processQueue')
                 void this.processQueue();
+                console.timeEnd('audioPlayerStateChange.processQueue')
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
+                clearTimeout(this.timeout);
                 this.playerEmbed.resend(this.musicQueue.nowPlaying)
             }
         });
@@ -105,26 +116,24 @@ class MusicPlayer {
         this._resource = null
     }
 
-    async enqueue(message, queueNumber) {
-        const args = message.content.split(' ');
-        const q = args.splice(1).join(" ")
+    async enqueue(query, author, queueNumber) {
+        console.time('enqueue')
 
         let response = null
-        if (q.startsWith(YOUTUBE_VIDEO_URL)) {
-            const url = new URL(q)
+        let reply = "empty"
+
+        if (query.startsWith(YOUTUBE_VIDEO_URL)) {
+            const url = new URL(query)
             const videoId = url.searchParams.get('v')
             const song = await Song.from(videoId)
-            song.owner = message.author
+            song.owner = author
             this.musicQueue.addSongToIndex(song, queueNumber)
 
-            if (!this.musicQueue.isEmpty()) {
-                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
-                this.textChannel.send({ embeds: [enqueueEmbed.build()] })
-            }
+            const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+            reply = { embeds: [enqueueEmbed.build()] }
 
-
-        } else if (q.startsWith(YOUTUBE_PLAYLIST_URL)) {
-            const url = new URL(q)
+        } else if (query.startsWith(YOUTUBE_PLAYLIST_URL)) {
+            const url = new URL(query)
             let playlistId = url.searchParams.get('list')
             let songs = []
 
@@ -151,7 +160,7 @@ class MusicPlayer {
                         item.snippet.thumbnails.standard,
                         -1,
                         item.snippet.videoOwnerChannelTitle,
-                        message.author
+                        author
                     )
 
                     songs.push(song)
@@ -161,16 +170,13 @@ class MusicPlayer {
 
             this.musicQueue.addSongsToIndex(songs, queueNumber);
             this.musicQueue.updateDurations();
-            helper.sendFadingMessage(
-                this.textChannel,
-                5000,
-                `Queued **${songs.length}** songs!`
-            )
+            reply = `Queued **${songs.length}** songs!`
+
         } else {
             const params = {
                 part: "id",
                 key: process.env.YOUTUBE_API_KEY,
-                q: q,
+                q: query,
                 type: "video",
                 maxResults: 1
             }
@@ -185,38 +191,28 @@ class MusicPlayer {
             try {
                 const videoId = response.data.items[0].id.videoId
                 const song = await Song.from(videoId)
-                song.owner = message.author
+                song.owner = author
 
                 this.musicQueue.addSongToIndex(song, queueNumber)
-                if (!this.musicQueue.isEmpty()) {
-                    const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
 
-                    this.textChannel.send({ embeds: [enqueueEmbed.build()] })
-                }
+                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+                reply = { embeds: [enqueueEmbed.build()] }
+
             } catch (err) {
                 console.log(err)
-                this.textChannel.send("Music Not Found!")
+                reply = "Music Not Found!"
             }
 
         }
 
         this.processQueue()
+        console.timeEnd('enqueue')
+        return reply
     }
 
-    move(message) {
-        let args = message.content.split(' ');
-        args = args.splice(1)
-        let from = parseInt(args[0]) - 1
-        let to = 0
-        if (args[1]) {
-            to = parseInt(args[1]) - 1
-        }
+    move(from, to) {
         this.musicQueue.move(from, to)
-        helper.sendFadingMessage(
-            this.textChannel,
-            5000,
-            `Moved ${this.musicQueue.songs[to].title} to position ${to + 1}!`
-        )
+        return `Moved **${this.musicQueue.songs[to].title}** to position **${to + 1}**!`
     }
 
     bumpPlayer() {
@@ -225,13 +221,10 @@ class MusicPlayer {
     }
 
     skip() {
-        helper.sendFadingMessage(
-            this.textChannel,
-            5000,
-            `Skipping **${this.musicQueue.nowPlaying.title}**...`
-        )
         this.audioPlayer.stop();
+        return `Skipping **${this.musicQueue.nowPlaying.title}**...`
     }
+
     clear() {
         this.musicQueue.empty();
         this.playerEmbed.destroy();
@@ -241,54 +234,67 @@ class MusicPlayer {
     leave() {
         this.queueLock = true;
         this.clear()
-        this.textChannel.send(`Alright... I'm heading out now ~`)
         this.voiceConnection.disconnect()
+        return `Alright... I'm heading out now ~`
     }
 
     shuffle() {
         this.musicQueue.shuffle()
-        helper.sendFadingMessage(
-            this.textChannel,
-            5000,
-            `Shuffled **${this.musicQueue.songs.length}** songs!`
-        )
+        return `Shuffled **${this.musicQueue.songs.length}** songs!`
     }
 
-    viewQueue(message) {
-        const args = message.content.split(' ');
-        let page = 1
-        if (args.length > 1) {
-            page = args.splice(1).join(" ");
-        }
+    viewQueue(page) {
+
         let embed = new MusicQueueEmbed(this.musicQueue)
 
-        helper.sendFadingMessage(
-            this.textChannel,
-            30000,
-            { embeds: [embed.build(page)] }
-        )
+        return { embeds: [embed.build(page)] }
+
     }
 
     async processQueue() {
-        // If the queue is locked (already being processed), is empty, or the audio player is already playing something, return
-        if (this.queueLock || this.audioPlayer.state.status != AudioPlayerStatus.Idle) {
+        console.time('processQueue')
+        // If the queue is locked (already being processed), is empty, or the audio player is already caching
+        if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource) || !this.musicQueue.songs[0]) {
+            console.timeEnd('processQueue')
             return;
         }
 
-        // Take the first item from the queue. This is NOT guaranteed to exist due to the nonexistent empty check above.
-        const nextTrack = this.musicQueue.shift();
-        if (!nextTrack) {
-            this.leave()
-            return;
-        }
         // Lock the queue to guarantee safe access
         this.queueLock = true;
 
+        if (this._resource && !this._nextResource) { // second time queue, cache the next song
+            console.log("2")
+            this._nextResource = await this.musicQueue.songs[0].createAudioResource();
+            console.timeEnd('processQueue')
+            this.queueLock = false;
+            return;
+        }
+
+        // Take the first item from the queue
+        const track = this.musicQueue.shift();
+        if (!track) {
+            this.playerEmbed.song = track // null
+            this.playerEmbed.update();
+            console.timeEnd('processQueue')
+            this.queueLock = false;
+            return;
+        }
 
 
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-            this._resource = await nextTrack.createAudioResource();
+            if (!this._resource && !this._nextResource) { // first time queue
+                this._resource = await track.createAudioResource();
+            } else { // on consequent (2+) and last song.
+                this._resource = this._nextResource;
+                if (this.musicQueue.songs[0]) {
+                    this.musicQueue.songs[0].createAudioResource().then(resource => {
+                        this._nextResource = resource
+                    });
+                } else {
+                    this._nextResource = null
+                }
+            }
             this.playerEmbed.setAudioResource(this._resource)
             this.playerEmbed.startProgressBar();
             this.audioPlayer.play(this._resource);
@@ -298,6 +304,7 @@ class MusicPlayer {
             this.queueLock = false;
         }
 
+        console.timeEnd('processQueue')
         return this.processQueue();
     }
 

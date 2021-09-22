@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A simple bot for personal needs.",
   "engines": {
-    "node": "16.9.1"
+    "node": ">=16.6.0"
   },
   "main": "start.js",
   "scripts": {
