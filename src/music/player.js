@@ -214,6 +214,7 @@ class MusicPlayer {
 
     move(from, to) {
         this.musicQueue.move(from, to)
+        this.cacheNextSong()
         return `Moved **${this.musicQueue.songs[to].title}** to position **${to + 1}**!`
     }
 
@@ -249,17 +250,16 @@ class MusicPlayer {
 
     shuffle() {
         this.musicQueue.shuffle()
+        this.cacheNextSong()
         return `Shuffled **${this.musicQueue.songs.length}** songs!`
     }
 
     viewQueue(page) {
-
         this.musicQueueEmbed.setPage(page)
         if (this.musicQueueEmbed.embedMessage) {
             this.musicQueueEmbed.embedMessage.delete()
         }
         return this.musicQueueEmbed.build()
-
     }
 
     viewFirstPageQueue() {
@@ -282,6 +282,16 @@ class MusicPlayer {
     disableQueueButtons() {
         this.musicQueueEmbed.disableQueueButtons()
         return this.musicQueueEmbed.build()
+    }
+
+    cacheNextSong() {
+        if (this.musicQueue.songs[0]) {
+            this.musicQueue.songs[0].createAudioResource().then(resource => {
+                this._nextResource = resource
+            });
+        } else {
+            this._nextResource = null
+        }
     }
 
     async processQueue() {
@@ -320,13 +330,7 @@ class MusicPlayer {
                 this._resource = await track.createAudioResource();
             } else { // on consequent (2+) and last song.
                 this._resource = this._nextResource;
-                if (this.musicQueue.songs[0]) {
-                    this.musicQueue.songs[0].createAudioResource().then(resource => {
-                        this._nextResource = resource
-                    });
-                } else {
-                    this._nextResource = null
-                }
+                this.cacheNextSong();
             }
             this.playerEmbed.setAudioResource(this._resource)
             this.playerEmbed.startProgressBar();
