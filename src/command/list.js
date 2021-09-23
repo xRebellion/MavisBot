@@ -52,6 +52,17 @@ module.exports = [
         ]
     },
     {
+        name: 'remove',
+        description: 'remove a song from queue',
+        options: [
+            {
+                name: 'position',
+                type: 'INTEGER',
+                description: 'which song position'
+            },
+        ]
+    },
+    {
         name: 'shuffle',
         description: 'shuffles queue',
     },

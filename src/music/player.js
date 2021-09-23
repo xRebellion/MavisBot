@@ -215,6 +215,12 @@ class MusicPlayer {
         return `Moved **${this.musicQueue.songs[to].title}** to position **${to + 1}**!`
     }
 
+    remove(index) {
+        reply = `Removed **${this.musicQueue.songs[index].title}** from queue!`
+        this.musicQueue.remove(position)
+        return reply
+    }
+
     bumpPlayer() {
         this.playerEmbed.updateProgressBar()
         this.playerEmbed.resend(this.musicQueue.nowPlaying)

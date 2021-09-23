@@ -63,6 +63,10 @@ class MusicQueue {
         this.songs.splice(to, 0, this.songs.splice(from, 1)[0]);
     }
 
+    remove(position) {
+        this.songs.splice(position, 1)
+    }
+
     async updateDurations() {
         let q = ""
         let i = 0
