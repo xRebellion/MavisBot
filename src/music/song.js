@@ -59,7 +59,7 @@ class Song {
         return `[${this.title}](${this.getVideoURL()}) ║ ${readableDuration}\n`
     }
 
-    static async from(videoId) {
+    static async from(videoId, requester) {
         const info = await getInfo(videoId)
         return new Song(
             videoId,
@@ -67,6 +67,7 @@ class Song {
             info.videoDetails.thumbnails.slice(-1)[0],
             info.videoDetails.lengthSeconds,
             info.videoDetails.ownerChannelName,
+            requester
         )
     }
 }

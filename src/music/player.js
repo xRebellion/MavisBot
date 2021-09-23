@@ -27,18 +27,20 @@ class MusicPlayer {
         this.volume = volume;
         this.musicQueue = new MusicQueue([])
         this.playerEmbed = new MusicPlayerEmbed(textChannel)
+        this.musicQueueEmbed = new MusicQueueEmbed(textChannel, this.musicQueue, 1)
         this.queueLock = false;
         this.readyLock = false;
         this.timeout = null;
 
-        this.playerEmbed.send(this.musicQueue.nowPlaying);
+        this.playerEmbed.setSong(this.musicQueue.nowPlaying);
+        this.playerEmbed.send();
         // Configure audio player
         this.audioPlayer.on('stateChange', (oldState, newState) => {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
                 if (this.musicQueue.isEmpty()) {
-                    this.playerEmbed.song = null
+                    this.playerEmbed.setSong(null)
                     this.playerEmbed.update()
                 }
                 this.timeout = setTimeout(() => {
@@ -125,8 +127,7 @@ class MusicPlayer {
         if (query.startsWith(YOUTUBE_VIDEO_URL)) {
             const url = new URL(query)
             const videoId = url.searchParams.get('v')
-            const song = await Song.from(videoId)
-            song.owner = author
+            const song = await Song.from(videoId, author)
             this.musicQueue.addSongToIndex(song, queueNumber)
 
             const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
@@ -167,7 +168,9 @@ class MusicPlayer {
                 }
                 params.pageToken = response.data.nextPageToken
             } while (response.data.nextPageToken)
-
+            if (this.musicQueue.isEmpty()) {
+                songs[0] = await Song.from(songs[0].videoId, author)
+            }
             this.musicQueue.addSongsToIndex(songs, queueNumber);
             this.musicQueue.updateDurations();
             reply = `Queued **${songs.length}** songs!`
@@ -190,8 +193,7 @@ class MusicPlayer {
             }
             try {
                 const videoId = response.data.items[0].id.videoId
-                const song = await Song.from(videoId)
-                song.owner = author
+                const song = await Song.from(videoId, author)
 
                 this.musicQueue.addSongToIndex(song, queueNumber)
 
@@ -223,7 +225,8 @@ class MusicPlayer {
 
     bumpPlayer() {
         this.playerEmbed.updateProgressBar()
-        this.playerEmbed.resend(this.musicQueue.nowPlaying)
+        this.playerEmbed.setSong(this.musicQueue.nowPlaying)
+        this.playerEmbed.resend()
     }
 
     skip() {
@@ -251,10 +254,34 @@ class MusicPlayer {
 
     viewQueue(page) {
 
-        let embed = new MusicQueueEmbed(this.musicQueue)
+        this.musicQueueEmbed.setPage(page)
+        if (this.musicQueueEmbed.embedMessage) {
+            this.musicQueueEmbed.embedMessage.delete()
+        }
+        return this.musicQueueEmbed.build()
 
-        return { embeds: [embed.build(page)] }
+    }
 
+    viewFirstPageQueue() {
+        this.musicQueueEmbed.setPage(1)
+        return this.musicQueueEmbed.build()
+    }
+    viewNextPageQueue() {
+        this.musicQueueEmbed.nextPage()
+        return this.musicQueueEmbed.build()
+    }
+    viewPrevPageQueue() {
+        this.musicQueueEmbed.prevPage()
+        return this.musicQueueEmbed.build()
+    }
+    viewLastPageQueue() {
+        this.musicQueueEmbed.setPage(this.musicQueueEmbed.getMaxPage())
+        return this.musicQueueEmbed.build()
+    }
+
+    disableQueueButtons() {
+        this.musicQueueEmbed.disableQueueButtons()
+        return this.musicQueueEmbed.build()
     }
 
     async processQueue() {
@@ -278,8 +305,8 @@ class MusicPlayer {
 
         // Take the first item from the queue
         const track = this.musicQueue.shift();
+        this.playerEmbed.setSong(track)
         if (!track) {
-            this.playerEmbed.song = track // null
             this.playerEmbed.update();
             console.timeEnd('processQueue')
             this.queueLock = false;
