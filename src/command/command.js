@@ -19,8 +19,8 @@ async function processCmd(message) {
         try {
             var args = message.content.substring(2).split(' ');
             var cmd = args[0];
-            let joinedArgs = args.splice(1).join(" ")
-            args = args.splice(1)
+            args = args.slice(1)
+            let joinedArgs = args.join(" ")
 
 
             if (registered.id.includes(message.author.id)) {
