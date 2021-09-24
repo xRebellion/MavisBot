@@ -209,7 +209,9 @@ class MusicPlayer extends EventEmitter {
             }
 
         }
-
+        if (queueNumber == 1) { // if play top, refresh the cache {
+            this.cacheNextSong();
+        }
         this.processQueue()
         return reply
     }
@@ -223,6 +225,7 @@ class MusicPlayer extends EventEmitter {
     remove(index) {
         reply = `Removed **${this.musicQueue.songs[index].title}** from queue!`
         this.musicQueue.remove(position)
+        this.cacheNextSong()
         return reply
     }
 
@@ -247,7 +250,7 @@ class MusicPlayer extends EventEmitter {
     leave() {
         this.queueLock = true;
         this.emit('leave');
-        this.voiceConnection.disconnect()
+        this.voiceConnection.destroy()
         return `Alright... I'm heading out now ~`
     }
 
