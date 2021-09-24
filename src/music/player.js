@@ -7,15 +7,17 @@ const MusicQueueEmbed = require('./embed/queue_embed');
 const MusicPlayerEmbed = require('./embed/player_embed');
 const EnqueueEmbed = require('./embed/enqueue_embed')
 const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus, VoiceConnectionStatus, entersState, VoiceConnectionDisconnectReason } = require('@discordjs/voice');
+const { EventEmitter } = require('events');
 
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/search"
 const YOUTUBE_PLAYLIST_API_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
 const YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch"
 const YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/playlist"
 // TODO: Create module for embed-type music player
-class MusicPlayer {
+class MusicPlayer extends EventEmitter {
 
     constructor(textChannel, voiceChannel, volume) {
+        super()
         this.textChannel = textChannel
         this.voiceChannel = voiceChannel;
         this.audioPlayer = createAudioPlayer();
@@ -30,7 +32,9 @@ class MusicPlayer {
         this.musicQueueEmbed = new MusicQueueEmbed(textChannel, this.musicQueue, 1)
         this.queueLock = false;
         this.readyLock = false;
-        this.timeout = null;
+        this._timeout = null;
+        this._resource = null
+        this._nextResource = null
 
         this.playerEmbed.setSong(this.musicQueue.nowPlaying);
         this.playerEmbed.send();
@@ -44,14 +48,14 @@ class MusicPlayer {
                     this.playerEmbed.setSong(null)
                     this.playerEmbed.update()
                 }
-                this.timeout = setTimeout(() => {
+                this._timeout = setTimeout(() => {
                     this.leave()
                 }, 300000);
                 this._resource = null;
                 void this.processQueue();
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
-                clearTimeout(this.timeout);
+                clearTimeout(this._timeout);
                 this.playerEmbed.resend(this.musicQueue.nowPlaying)
             }
         });
@@ -91,6 +95,8 @@ class MusicPlayer {
                     Once destroyed, stop the subscription
                 */
                 this.clear();
+                this.playerEmbed.destroy();
+                this.emit('leave');
             } else if (
                 !this.readyLock &&
                 (newState.status === VoiceConnectionStatus.Connecting || newState.status === VoiceConnectionStatus.Signalling)
@@ -114,12 +120,10 @@ class MusicPlayer {
         })
 
         this.voiceConnection.subscribe(this.audioPlayer)
-        this._resource = null
+
     }
 
     async enqueue(query, author, queueNumber) {
-        console.time('enqueue')
-
         let response = null
         let reply = "empty"
 
@@ -207,7 +211,6 @@ class MusicPlayer {
         }
 
         this.processQueue()
-        console.timeEnd('enqueue')
         return reply
     }
 
@@ -236,13 +239,14 @@ class MusicPlayer {
 
     clear() {
         this.musicQueue.empty();
-        this.playerEmbed.destroy();
+        this._resource = null
+        this._nextResource = null
         this.audioPlayer.stop(true);
     }
 
     leave() {
         this.queueLock = true;
-        this.clear()
+        this.emit('leave');
         this.voiceConnection.disconnect()
         return `Alright... I'm heading out now ~`
     }
@@ -294,10 +298,14 @@ class MusicPlayer {
     }
 
     async processQueue() {
-        console.time('processQueue')
         // If the queue is locked (already being processed), is empty, or the audio player already cached the next song
+
         if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource) || this.musicQueue.isEmpty()) {
-            console.timeEnd('processQueue')
+            return;
+        }
+
+        if (this.audioPlayer.state.status != AudioPlayerStatus.Idle && !this._nextResource) {
+            this.cacheNextSong();
             return;
         }
 
@@ -309,7 +317,6 @@ class MusicPlayer {
         this.playerEmbed.setSong(track)
         if (!track) {
             this.playerEmbed.update();
-            console.timeEnd('processQueue')
             this.queueLock = false;
             return;
         }
@@ -326,13 +333,12 @@ class MusicPlayer {
             this.playerEmbed.setAudioResource(this._resource)
             this.playerEmbed.startProgressBar();
             this.audioPlayer.play(this._resource);
-            this.queueLock = false;
+
         } catch (error) {
             console.log(error)
-            this.queueLock = false;
         }
 
-        console.timeEnd('processQueue')
+        this.queueLock = false;
         return this.processQueue();
     }
 

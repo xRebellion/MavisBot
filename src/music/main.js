@@ -32,7 +32,9 @@ async function execute(messageOrInteraction, query, queueNumber) {
             voiceChannel,
             1
         )
+        serverPlayer.on('leave', () => { serverMap.delete(guildId) })
         serverMap.set(guildId, serverPlayer);
+
     }
     if (messageOrInteraction instanceof Interaction)
         messageOrInteraction.editReply(await serverPlayer.enqueue(query, requester, queueNumber));
@@ -59,7 +61,6 @@ function leave(messageOrInteraction) {
     if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
     if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
     messageOrInteraction.reply(serverPlayer.leave());
-    serverMap.delete(guildId);
 }
 
 function move(messageOrInteraction, from, to) {
