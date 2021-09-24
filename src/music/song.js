@@ -20,7 +20,6 @@ class Song {
                     o: '-',
                     q: '',
                     f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
-                    r: '100K',
                 },
                 { stdio: ['ignore', 'pipe', 'ignore'] },
             );
