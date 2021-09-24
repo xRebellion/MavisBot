@@ -50,7 +50,11 @@ class MusicQueue {
     }
 
     isEmpty() {
-        return this.nowPlaying == null
+        return this.songs.length == 0
+    }
+
+    isPlaying() {
+        return this.nowPlaying != null
     }
 
     indexOf(song) {
@@ -61,6 +65,10 @@ class MusicQueue {
         if (from >= this.songs.length || to >= this.songs.length)
             return
         this.songs.splice(to, 0, this.songs.splice(from, 1)[0]);
+    }
+
+    remove(position) {
+        this.songs.splice(position, 1)
     }
 
     async updateDurations() {

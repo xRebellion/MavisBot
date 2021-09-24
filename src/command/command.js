@@ -84,6 +84,9 @@ async function processCmd(message) {
                 case 'queue':
                     music.viewQueue(message, args[0]);
                     break;
+                case 'remove':
+                    music.remove(message, args[0])
+                    break;
                 case 'shuffle':
                     music.shuffle(message);
                     break;

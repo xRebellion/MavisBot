@@ -4,11 +4,11 @@ var music = require('../music/main.js')
 var fun = require('../fun.js')
 
 async function processSlashCmd(interaction) {
+    if (!interaction.isCommand() || !interaction.guildId) return;
     const helpEmbed = new MessageEmbed()
         .setTitle('**Mavis here~**')
         .setColor(0x027059)
         .setDescription(msgs.HELP);
-    if (!interaction.isCommand() || !interaction.guildId) return;
     try {
         switch (interaction.commandName) {
             case 'leave':
@@ -35,6 +35,9 @@ async function processSlashCmd(interaction) {
             case 'q':
             case 'queue':
                 music.viewQueue(interaction, interaction.options.getInteger('page'));
+                break;
+            case 'remove':
+                music.remove(interaction, interaction.options.getInteger('position'));
                 break;
             case 'shuffle':
                 music.shuffle(interaction);

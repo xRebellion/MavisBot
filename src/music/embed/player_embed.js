@@ -11,7 +11,7 @@ class MusicPlayerEmbed {
         this.audioResource = null
         this.destroyed = false;
     }
-    buildEmbed() {
+    build() {
         if (!this.song) return new MessageEmbed()
             .setColor(0x027059)
             .setAuthor("Music Player")
@@ -27,17 +27,19 @@ class MusicPlayerEmbed {
             .setImage(this.song.thumbnail.url)
             .setFooter(`Requested by ${this.song.owner.tag}`, this.song.owner.displayAvatarURL())
     }
-    async send(song) {
+    setSong(song) {
         this.song = song
-        this.embedMessage = await this.textChannel.send({ embeds: [this.buildEmbed()] });
     }
-    async resend(song) {
-        this.song = song
+    async send() {
+        this.embedMessage = await this.textChannel.send({ embeds: [this.build()] });
+    }
+    async resend() {
         this.embedMessage.delete()
-        this.embedMessage = await this.textChannel.send({ embeds: [this.buildEmbed()] });
+        this.embedMessage = await this.textChannel.send({ embeds: [this.build()] });
     }
     update() {
-        this.embedMessage.edit({ embeds: [this.buildEmbed()] });
+        if (this.embedMessage)
+            this.embedMessage.edit({ embeds: [this.build()] });
     }
     setAudioResource(resource) {
         this.audioResource = resource
@@ -45,7 +47,7 @@ class MusicPlayerEmbed {
     async startProgressBar() {
         this.timer = setInterval(() => {
             this.updateProgressBar()
-            this.embedMessage.edit({ embeds: [this.buildEmbed()] });
+            this.embedMessage.edit({ embeds: [this.build()] });
         }, 8000)
     }
     stopProgressBar() {
@@ -56,6 +58,7 @@ class MusicPlayerEmbed {
     }
     destroy() {
         if (!this.destroyed) {
+            this.stopProgressBar()
             this.embedMessage.delete();
             this.textChannel = null
             this.embedMessage = null
