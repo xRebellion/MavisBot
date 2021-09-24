@@ -39,6 +39,7 @@ class MusicPlayer {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
+                this.playerEmbed.stopProgressBar();
                 if (this.musicQueue.isEmpty()) {
                     this.playerEmbed.setSong(null)
                     this.playerEmbed.update()
@@ -46,10 +47,8 @@ class MusicPlayer {
                 this.timeout = setTimeout(() => {
                     this.leave()
                 }, 300000);
-                this.playerEmbed.stopProgressBar();
-                console.time('audioPlayerStateChange.processQueue')
+                this._resource = null;
                 void this.processQueue();
-                console.timeEnd('audioPlayerStateChange.processQueue')
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
                 clearTimeout(this.timeout);
@@ -168,7 +167,7 @@ class MusicPlayer {
                 }
                 params.pageToken = response.data.nextPageToken
             } while (response.data.nextPageToken)
-            if (this.musicQueue.isEmpty()) {
+            if (!this.musicQueue.isPlaying()) {
                 songs[0] = await Song.from(songs[0].videoId, author)
             }
             this.musicQueue.addSongsToIndex(songs, queueNumber);
@@ -290,28 +289,20 @@ class MusicPlayer {
                 this._nextResource = resource
             });
         } else {
-            this._nextResource = null
+            this._nextResource = null // and last song
         }
     }
 
     async processQueue() {
         console.time('processQueue')
-        // If the queue is locked (already being processed), is empty, or the audio player is already caching
-        if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource) || !this.musicQueue.songs[0]) {
+        // If the queue is locked (already being processed), is empty, or the audio player already cached the next song
+        if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource) || this.musicQueue.isEmpty()) {
             console.timeEnd('processQueue')
             return;
         }
 
         // Lock the queue to guarantee safe access
         this.queueLock = true;
-
-        if (this._resource && !this._nextResource) { // second time queue, cache the next song
-            console.log("2")
-            this._nextResource = await this.musicQueue.songs[0].createAudioResource();
-            console.timeEnd('processQueue')
-            this.queueLock = false;
-            return;
-        }
 
         // Take the first item from the queue
         const track = this.musicQueue.shift();
@@ -326,9 +317,9 @@ class MusicPlayer {
 
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-            if (!this._resource && !this._nextResource) { // first time queue
+            if (!this._nextResource && this.musicQueue.isEmpty()) { // first time requesting a song, queue is empty
                 this._resource = await track.createAudioResource();
-            } else { // on consequent (2+) and last song.
+            } else { // on consequent (2+) requests.
                 this._resource = this._nextResource;
                 this.cacheNextSong();
             }

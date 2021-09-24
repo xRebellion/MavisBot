@@ -40,7 +40,7 @@ class MusicQueueEmbed {
     build() {
         let description = ""
         if (this.musicQueue.isEmpty()) {
-            description = "... There's nothing to see here"
+            description = "**... There's nothing to see here**"
         } else {
             description = this._queueToText(this.page)
         }

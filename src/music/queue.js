@@ -50,7 +50,11 @@ class MusicQueue {
     }
 
     isEmpty() {
-        return this.nowPlaying == null
+        return this.songs.length == 0
+    }
+
+    isPlaying() {
+        return this.nowPlaying != null
     }
 
     indexOf(song) {
