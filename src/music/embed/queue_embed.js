@@ -6,7 +6,7 @@ class MusicQueueEmbed {
         this.musicQueue = musicQueue
         this.page = page
         this.embedMessage = null
-
+        this.disabled = false
         this.firstPageButton = new MessageButton()
             .setCustomId("queueFirstPage")
             .setLabel("◄◄")
@@ -27,9 +27,9 @@ class MusicQueueEmbed {
 
     _queueToText(page) {
         let text = ""
-        let songs = this.musicQueue.songs
-        for (let i = 10 * (page - 1); i < 10 * page && i < songs.length; i++) {
-            let songInfo = songs[i].flattenForQueue()
+
+        for (let i = 10 * (page - 1); i < 10 * page && i < this.musicQueue.songs.length; i++) {
+            let songInfo = this.musicQueue.getSong(i).flattenForQueue()
             text = text + (i + 1) + ". " + songInfo + "\n"
         }
 

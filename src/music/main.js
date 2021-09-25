@@ -138,7 +138,10 @@ async function viewQueue(messageOrInteraction, page) {
     })
 
     collector.on('end', async _ => {
-        queueMessage.edit(serverPlayer.disableQueueButtons())
+        if (!queueMessage.deleted) {
+            serverPlayer.disableQueueButtons()
+            serverPlayer.musicQueueEmbed.update()
+        }
     })
 }
 

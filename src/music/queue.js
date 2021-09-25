@@ -5,24 +5,55 @@ const axios = require('axios').default;
 const YOUTUBE_VIDEOS_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 class MusicQueue {
 
-    constructor(songs) {
-        this.songs = songs;
-        this.nowPlaying = songs[0];
+    constructor() {
+        this.songs = []; // IDs only
+        this.nowPlaying = null; // ID only
+        this.songMap = new Map();
     }
 
     addSong(song) {
-        this.songs.push(song);
+        this.songs.push(song.videoId);
+        this.songMap.set(song.videoId, song);
     }
 
     addSongToIndex(song, index) {
-        if (index < 0) this.addSong(song);
-        else this.songs.splice(index, 0, song);
+        if (index < 0) {
+            this.addSong(song);
+            return 0
+        } else {
+            this.songs.splice(index, 0, song.videoId);
+            this.songMap.set(song.videoId, song);
+            return index
+        }
     }
 
     addSongsToIndex(songs, index) {
-        this.songs.splice(index, 0, ...songs)
+        let i = index
+        for (const song of songs) {
+            if (index < 0) {
+                this.addSong(song)
+            } else {
+                this.addSongToIndex(song, i++)
+            }
+        }
     }
 
+    getSong(index) {
+        return this.songMap.get(this.songs[index]);
+    }
+    getSongByVideoID(id) {
+        return this.songMap.get(id)
+    }
+    getNextSong() {
+        return this.getSong(0)
+    }
+    nextSongExists() {
+        return this.songs[0] != undefined
+    }
+
+    getNowPlaying() {
+        return this.songMap.get(this.nowPlaying)
+    }
     shuffle() {
         let currentIndex = this.songs.length, randomIndex;
 
@@ -42,11 +73,15 @@ class MusicQueue {
     empty() {
         this.songs = [];
         this.nowPlaying = null;
+        this.songMap.clear();
     }
 
     shift() {
+        if (this.nowPlaying && !this.songs.includes(this.nowPlaying)) {
+            this.songMap.delete(this.nowPlaying)
+        } // in case of dupes, don't delete map if there are
         this.nowPlaying = this.songs.shift()
-        return this.nowPlaying
+        return this.getNowPlaying();
     }
 
     isEmpty() {
@@ -57,10 +92,6 @@ class MusicQueue {
         return this.nowPlaying != null
     }
 
-    indexOf(song) {
-        return this.songs.indexOf(song)
-    }
-
     move(from, to) {
         if (from >= this.songs.length || to >= this.songs.length)
             return
@@ -68,7 +99,11 @@ class MusicQueue {
     }
 
     remove(position) {
-        this.songs.splice(position, 1)
+        const removed = this.songs.splice(position, 1)
+        if (!this.songs.includes(removed)) {
+            this.songMap.delete(removed)
+        } // in case of dupes, don't delete map if there are
+        return removed
     }
 
     async updateDurations() {
@@ -77,9 +112,9 @@ class MusicQueue {
         let j = 0
         let details = []
 
-        for (const song of this.songs) {
+        for (const id of this.songs) {
 
-            let videoId = song.videoId
+            let videoId = id
             q = q + videoId + ","
             i++;
             j++;
@@ -106,12 +141,13 @@ class MusicQueue {
 
         }
 
-        for (let i = 0; i < this.songs.length; i++) {
-            this.songs[i].duration = helper.ptToSeconds(details[i].contentDetails.duration)
+        for (let i = 0; i < details.length; i++) {
+            const song = this.songMap.get(details[i].id)
+            song.duration = helper.ptToSeconds(details[i].contentDetails.duration)
+            this.songMap.set(song)
         }
-
-
     }
+
 }
 
 module.exports = MusicQueue

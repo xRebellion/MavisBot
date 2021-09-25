@@ -28,7 +28,7 @@ class MusicPlayer extends EventEmitter {
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
         });
         this.volume = volume;
-        this.musicQueue = new MusicQueue([])
+        this.musicQueue = new MusicQueue()
         this.playerEmbed = new MusicPlayerEmbed(textChannel)
         this.musicQueueEmbed = new MusicQueueEmbed(textChannel, this.musicQueue, 1)
         this.queueLock = false;
@@ -51,7 +51,7 @@ class MusicPlayer extends EventEmitter {
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
                 clearTimeout(this._timeout);
-                this.playerEmbed.resend(this.musicQueue.nowPlaying)
+                this.playerEmbed.resend(this.musicQueue.getNowPlaying())
             }
         });
 
@@ -126,9 +126,9 @@ class MusicPlayer extends EventEmitter {
             const url = new URL(query)
             const videoId = url.searchParams.get('v')
             const song = await Song.from(videoId, author)
-            this.musicQueue.addSongToIndex(song, queueNumber)
+            const index = this.musicQueue.addSongToIndex(song, queueNumber - 1)
 
-            const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+            const enqueueEmbed = new EnqueueEmbed(song, index, this.musicQueue)
             reply = { embeds: [enqueueEmbed.build()] }
 
         } else if (query.startsWith(YOUTUBE_PLAYLIST_URL)) {
@@ -169,7 +169,7 @@ class MusicPlayer extends EventEmitter {
             if (!this.musicQueue.isPlaying()) {
                 songs[0] = await Song.from(songs[0].videoId, author)
             }
-            this.musicQueue.addSongsToIndex(songs, queueNumber);
+            this.musicQueue.addSongsToIndex(songs, queueNumber - 1);
             this.musicQueue.updateDurations();
             reply = `Queued **${songs.length}** songs!`
 
@@ -193,9 +193,9 @@ class MusicPlayer extends EventEmitter {
                 const videoId = response.data.items[0].id.videoId
                 const song = await Song.from(videoId, author)
 
-                this.musicQueue.addSongToIndex(song, queueNumber)
+                const index = this.musicQueue.addSongToIndex(song, queueNumber - 1)
 
-                const enqueueEmbed = new EnqueueEmbed(song, this.musicQueue)
+                const enqueueEmbed = new EnqueueEmbed(song, index, this.musicQueue)
                 reply = { embeds: [enqueueEmbed.build()] }
 
             } catch (err) {
@@ -212,7 +212,7 @@ class MusicPlayer extends EventEmitter {
     }
 
     move(from, to) {
-        const reply = `Moved **${this.musicQueue.songs[to].title}** to position **${to + 1}**!`
+        const reply = `Moved **${this.musicQueue.getSong(from).title}** to position **${to + 1}**!`
         this.musicQueue.move(from, to)
         this.cacheNextSong()
         const embed = new MessageEmbed()
@@ -223,7 +223,7 @@ class MusicPlayer extends EventEmitter {
 
     remove(index) {
 
-        removed = this.musicQueue.remove(index)
+        const removed = this.musicQueue.remove(index)
         this.cacheNextSong()
         const reply = `Removed **${removed.title}** from queue!`
         const embed = new MessageEmbed()
@@ -234,12 +234,12 @@ class MusicPlayer extends EventEmitter {
 
     bumpPlayer() {
         this.playerEmbed.updateProgressBar()
-        this.playerEmbed.setSong(this.musicQueue.nowPlaying)
+        this.playerEmbed.setSong(this.musicQueue.getNowPlaying())
         this.playerEmbed.resend()
     }
 
     skip() {
-        const reply = `Skipping **${this.musicQueue.nowPlaying.title}**...`
+        const reply = `Skipping **${this.musicQueue.getNowPlaying().title}**...`
         this.audioPlayer.stop();
         const embed = new MessageEmbed()
             .setColor(0x027059)
@@ -303,8 +303,8 @@ class MusicPlayer extends EventEmitter {
     }
 
     cacheNextSong() {
-        if (this.musicQueue.songs[0]) {
-            this.musicQueue.songs[0].createAudioResource().then(resource => {
+        if (this.musicQueue.nextSongExists()) {
+            this.musicQueue.getNextSong().createAudioResource().then(resource => {
                 this._nextResource = resource
             });
         } else {
@@ -314,7 +314,6 @@ class MusicPlayer extends EventEmitter {
 
     async processQueue() {
         // If the queue is locked (already being processed), is empty, or the audio player already cached the next song
-
         if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource)) {
             return;
         }
@@ -358,6 +357,7 @@ class MusicPlayer extends EventEmitter {
 
         } catch (error) {
             console.log(error)
+            return;
         }
 
         this.queueLock = false;

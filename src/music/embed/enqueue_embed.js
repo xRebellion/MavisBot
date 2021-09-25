@@ -1,13 +1,13 @@
 const { MessageEmbed } = require("discord.js")
 
 class EnqueueEmbed {
-    constructor(song, musicQueue) {
+    constructor(song, position) {
         this.user = song.owner
         this.title = song.title
         this.thumbnail = song.thumbnail
         this.channelName = song.channelName
         this.videoURL = song.getVideoURL()
-        this.position = musicQueue.indexOf(song) + 1
+        this.position = position
     }
 
     build() {
