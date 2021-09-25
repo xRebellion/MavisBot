@@ -23,7 +23,10 @@ async function execute(messageOrInteraction, query, queueNumber) {
     }
     const permissions = voiceChannel.permissionsFor(messageOrInteraction.client.user)
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
-        return messageOrInteraction.editReply(msgs.NO_MUSIC_PERMISSION)
+        if (messageOrInteraction instanceof Interaction)
+            return messageOrInteraction.editReply(msgs.NO_MUSIC_PERMISSION)
+        else
+            return messageOrInteraction.editReply(msgs.NO_MUSIC_PERMISSION)
     }
 
     if (!serverPlayer) {
@@ -34,13 +37,14 @@ async function execute(messageOrInteraction, query, queueNumber) {
         )
         serverPlayer.on('leave', () => { serverMap.delete(guildId) })
         serverMap.set(guildId, serverPlayer)
-
     }
     if (messageOrInteraction instanceof Interaction)
         messageOrInteraction.editReply(await serverPlayer.enqueue(query, requester, queueNumber))
     else
         messageOrInteraction.reply(await serverPlayer.enqueue(query, requester, queueNumber))
 }
+
+
 
 function skip(messageOrInteraction) {
     const guildId = messageOrInteraction.guild.id
@@ -52,6 +56,33 @@ function skip(messageOrInteraction) {
     messageOrInteraction.reply(serverPlayer.skip())
 }
 
+function join(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    let serverPlayer = serverMap.get(messageOrInteraction.guild.id)
+
+    if (!voiceChannel) {
+        return messageOrInteraction.reply(msgs.MUSIC_NO_ONE_IN_THE_ROOM)
+    }
+    const permissions = voiceChannel.permissionsFor(messageOrInteraction.client.user)
+    if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
+        return messageOrInteraction.reply(msgs.NO_MUSIC_PERMISSION)
+    }
+
+    if (!serverPlayer) {
+        serverPlayer = new MusicPlayer(
+            textChannel,
+            voiceChannel,
+            1
+        )
+        serverPlayer.on('leave', () => { serverMap.delete(guildId) })
+        serverMap.set(guildId, serverPlayer)
+    } else {
+        return messageOrInteraction.reply("I am already in the room!")
+    }
+}
 
 function leave(messageOrInteraction) {
     const guildId = messageOrInteraction.guild.id
@@ -201,6 +232,7 @@ function toggleLinkMode(messageOrInteraction) {
 }
 module.exports = {
     execute,
+    join,
     leave,
     skip,
     move,

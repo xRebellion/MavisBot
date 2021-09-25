@@ -3,6 +3,7 @@ const msgs = require('../../data/messages.js')
 var music = require('../music/main.js')
 var fun = require('../fun.js')
 
+// TODO: linkmode and join, also on list.js
 async function processSlashCmd(interaction) {
     if (!interaction.isCommand() || !interaction.guildId) return
     const helpEmbed = new MessageEmbed()

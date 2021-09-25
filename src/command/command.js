@@ -73,6 +73,9 @@ async function processCmd(message) {
                 fun.peekPicture(message, m.args)
                 break
 
+            case 'join':
+                music.join(message)
+                break;
             case 'leave':
                 music.leave(message)
                 break
