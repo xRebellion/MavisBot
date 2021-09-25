@@ -47,7 +47,7 @@ class MusicPlayerEmbed {
     async startProgressBar() {
         this.timer = setInterval(() => {
             this.updateProgressBar()
-            this.embedMessage.edit({ embeds: [this.build()] });
+            this.update()
         }, 8000)
     }
     stopProgressBar() {

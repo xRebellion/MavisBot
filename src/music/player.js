@@ -3,6 +3,7 @@ const helper = require('../util/helper')
 const MusicQueue = require("./queue");
 const Song = require("./song.js");
 const axios = require('axios').default;
+const { MessageEmbed } = require("discord.js");
 const MusicQueueEmbed = require('./embed/queue_embed');
 const MusicPlayerEmbed = require('./embed/player_embed');
 const EnqueueEmbed = require('./embed/enqueue_embed')
@@ -35,24 +36,18 @@ class MusicPlayer extends EventEmitter {
         this._timeout = null;
         this._resource = null
         this._nextResource = null
-
-        this.playerEmbed.setSong(this.musicQueue.nowPlaying);
         this.playerEmbed.send();
         // Configure audio player
         this.audioPlayer.on('stateChange', (oldState, newState) => {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
-                this.playerEmbed.stopProgressBar();
-                if (this.musicQueue.isEmpty()) {
-                    this.playerEmbed.setSong(null)
-                    this.playerEmbed.update()
-                }
                 this._timeout = setTimeout(() => {
                     this.leave()
-                }, 300000);
+                }, 15 * 60 * 1000);
                 this._resource = null;
                 void this.processQueue();
+
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
                 clearTimeout(this._timeout);
@@ -217,16 +212,24 @@ class MusicPlayer extends EventEmitter {
     }
 
     move(from, to) {
+        const reply = `Moved **${this.musicQueue.songs[to].title}** to position **${to + 1}**!`
         this.musicQueue.move(from, to)
         this.cacheNextSong()
-        return `Moved **${this.musicQueue.songs[to].title}** to position **${to + 1}**!`
+        const embed = new MessageEmbed()
+            .setColor(0x027059)
+            .setDescription(reply)
+        return { embeds: [embed] }
     }
 
     remove(index) {
-        reply = `Removed **${this.musicQueue.songs[index].title}** from queue!`
-        this.musicQueue.remove(position)
+
+        removed = this.musicQueue.remove(index)
         this.cacheNextSong()
-        return reply
+        const reply = `Removed **${removed.title}** from queue!`
+        const embed = new MessageEmbed()
+            .setColor(0x027059)
+            .setDescription(reply)
+        return { embeds: [embed] }
     }
 
     bumpPlayer() {
@@ -236,8 +239,12 @@ class MusicPlayer extends EventEmitter {
     }
 
     skip() {
+        const reply = `Skipping **${this.musicQueue.nowPlaying.title}**...`
         this.audioPlayer.stop();
-        return `Skipping **${this.musicQueue.nowPlaying.title}**...`
+        const embed = new MessageEmbed()
+            .setColor(0x027059)
+            .setDescription(reply)
+        return { embeds: [embed] }
     }
 
     clear() {
@@ -248,16 +255,21 @@ class MusicPlayer extends EventEmitter {
     }
 
     leave() {
+        const reply = `Alright... I'm heading out now ~`
         this.queueLock = true;
         this.emit('leave');
         this.voiceConnection.destroy()
-        return `Alright... I'm heading out now ~`
+        return reply
     }
 
     shuffle() {
+        reply = `Shuffled **${this.musicQueue.songs.length}** songs!`
         this.musicQueue.shuffle()
         this.cacheNextSong()
-        return `Shuffled **${this.musicQueue.songs.length}** songs!`
+        const embed = new MessageEmbed()
+            .setColor(0x027059)
+            .setDescription(reply)
+        return { embeds: [embed] }
     }
 
     viewQueue(page) {
@@ -303,8 +315,18 @@ class MusicPlayer extends EventEmitter {
     async processQueue() {
         // If the queue is locked (already being processed), is empty, or the audio player already cached the next song
 
-        if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource) || this.musicQueue.isEmpty()) {
+        if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource)) {
             return;
+        }
+
+        if (this.musicQueue.isEmpty()) {
+            if (this.audioPlayer.state.status != AudioPlayerStatus.Idle) return;
+            else {
+                this.playerEmbed.stopProgressBar()
+                this.playerEmbed.setSong(null);
+                this.playerEmbed.update()
+                return;
+            }
         }
 
         if (this.audioPlayer.state.status != AudioPlayerStatus.Idle && !this._nextResource) {
@@ -318,16 +340,13 @@ class MusicPlayer extends EventEmitter {
         // Take the first item from the queue
         const track = this.musicQueue.shift();
         this.playerEmbed.setSong(track)
-        if (!track) {
-            this.playerEmbed.update();
-            this.queueLock = false;
-            return;
-        }
-
 
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-            if (!this._nextResource && this.musicQueue.isEmpty()) { // first time requesting a song, queue is empty
+            if (!this._resource && !this._nextResource) { // Queuing a playlist
+                this._resource = await track.createAudioResource();
+                this.cacheNextSong();
+            } else if (!this._nextResource) { // first time requesting a song
                 this._resource = await track.createAudioResource();
             } else { // on consequent (2+) requests.
                 this._resource = this._nextResource;
