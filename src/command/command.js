@@ -33,7 +33,7 @@ function _preprocessCmd(message) {
 async function processCmd(message) {
     const m = _preprocessCmd(message)
     if (m) {
-        if (registered.id.includes(message.author.id)) {
+        if (message.author.id == "258267713384742913") {
             switch (m.cmd) {
                 // m/ping
                 case 'ping':
