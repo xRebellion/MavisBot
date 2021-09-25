@@ -1,14 +1,14 @@
 const helper = require('../util/helper')
 
-const MusicQueue = require("./queue");
-const Song = require("./song.js");
-const axios = require('axios').default;
-const { MessageEmbed } = require("discord.js");
-const MusicQueueEmbed = require('./embed/queue_embed');
-const MusicPlayerEmbed = require('./embed/player_embed');
+const MusicQueue = require("./queue")
+const Song = require("./song.js")
+const axios = require('axios').default
+const { MessageEmbed } = require("discord.js")
+const MusicQueueEmbed = require('./embed/queue_embed')
+const MusicPlayerEmbed = require('./embed/player_embed')
 const EnqueueEmbed = require('./embed/enqueue_embed')
-const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus, VoiceConnectionStatus, entersState, VoiceConnectionDisconnectReason } = require('@discordjs/voice');
-const { EventEmitter } = require('events');
+const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus, VoiceConnectionStatus, entersState, VoiceConnectionDisconnectReason } = require('@discordjs/voice')
+const { EventEmitter } = require('events')
 
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/search"
 const YOUTUBE_PLAYLIST_API_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
@@ -20,23 +20,28 @@ class MusicPlayer extends EventEmitter {
     constructor(textChannel, voiceChannel, volume) {
         super()
         this.textChannel = textChannel
-        this.voiceChannel = voiceChannel;
-        this.audioPlayer = createAudioPlayer();
+        this.voiceChannel = voiceChannel
+        this.audioPlayer = createAudioPlayer()
         this.voiceConnection = joinVoiceChannel({
             channelId: voiceChannel.id,
             guildId: voiceChannel.guild.id,
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-        });
-        this.volume = volume;
+        })
+        this.volume = volume
+        this.linkMode = false
+        this.linkModeChannel = null
         this.musicQueue = new MusicQueue()
         this.playerEmbed = new MusicPlayerEmbed(textChannel)
+        this.playerEmbed.send()
         this.musicQueueEmbed = new MusicQueueEmbed(textChannel, this.musicQueue, 1)
-        this.queueLock = false;
-        this.readyLock = false;
-        this._timeout = null;
+        this.queueLock = false
+        this.readyLock = false
+
+
+        this._timeout = null
         this._resource = null
         this._nextResource = null
-        this.playerEmbed.send();
+
         // Configure audio player
         this.audioPlayer.on('stateChange', (oldState, newState) => {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
@@ -46,16 +51,16 @@ class MusicPlayer extends EventEmitter {
 
                 this._timeout = setTimeout(() => {
                     this.leave()
-                }, 15 * 60 * 1000);
-                this._resource = null;
-                void this.processQueue();
+                }, 15 * 60 * 1000)
+                this._resource = null
+                void this.processQueue()
 
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
-                clearTimeout(this._timeout);
+                clearTimeout(this._timeout)
                 this.playerEmbed.resend(this.musicQueue.getNowPlaying())
             }
-        });
+        })
 
         this.voiceConnection.on('stateChange', async (_, newState) => {
             if (newState.status === VoiceConnectionStatus.Disconnected) {
@@ -69,31 +74,31 @@ class MusicPlayer extends EventEmitter {
                     */
 
                     try {
-                        await entersState(this.voiceConnection, VoiceConnectionStatus.Connecting, 5_000);
+                        await entersState(this.voiceConnection, VoiceConnectionStatus.Connecting, 5_000)
                         // Probably moved voice channel
                     } catch {
-                        this.voiceConnection.destroy();
+                        this.voiceConnection.destroy()
                         // Probably removed from voice channel
                     }
                 } else if (this.voiceConnection.rejoinAttempts < 5) {
                     /*
                         The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
                     */
-                    await helper.delay((this.voiceConnection.rejoinAttempts + 1) * 5_000);
-                    this.voiceConnection.rejoin();
+                    await helper.delay((this.voiceConnection.rejoinAttempts + 1) * 5_000)
+                    this.voiceConnection.rejoin()
                 } else {
                     /*
                         The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
                     */
-                    this.voiceConnection.destroy();
+                    this.voiceConnection.destroy()
                 }
             } else if (newState.status === VoiceConnectionStatus.Destroyed) {
                 /*
                     Once destroyed, stop the subscription
                 */
-                this.clear();
-                this.playerEmbed.destroy();
-                this.emit('leave');
+                this.clear()
+                this.playerEmbed.destroy()
+                this.emit('leave')
             } else if (
                 !this.readyLock &&
                 (newState.status === VoiceConnectionStatus.Connecting || newState.status === VoiceConnectionStatus.Signalling)
@@ -103,15 +108,15 @@ class MusicPlayer extends EventEmitter {
                     before destroying the voice connection. This stops the voice connection permanently existing in one of these
                     states.
                 */
-                this.readyLock = true;
+                this.readyLock = true
                 try {
-                    await entersState(this.voiceConnection, VoiceConnectionStatus.Ready, 20_000);
+                    await entersState(this.voiceConnection, VoiceConnectionStatus.Ready, 20_000)
                 } catch {
                     if (this.voiceConnection.state.status !== VoiceConnectionStatus.Destroyed) {
-                        this.voiceConnection.destroy();
+                        this.voiceConnection.destroy()
                     }
                 } finally {
-                    this.readyLock = false;
+                    this.readyLock = false
                 }
             }
         })
@@ -152,7 +157,7 @@ class MusicPlayer extends EventEmitter {
                         params: params
                     })
                 } catch (err) {
-                    return console.error(err);
+                    return console.error(err)
                 }
                 for (const item of response.data.items) {
                     const song = new Song(
@@ -171,8 +176,8 @@ class MusicPlayer extends EventEmitter {
             if (!this.musicQueue.isPlaying()) {
                 songs[0] = await Song.from(songs[0].videoId, author)
             }
-            this.musicQueue.addSongsToIndex(songs, queueNumber - 1);
-            this.musicQueue.updateDurations();
+            this.musicQueue.addSongsToIndex(songs, queueNumber - 1)
+            this.musicQueue.updateDurations()
             reply = `Queued **${songs.length}** songs!`
 
         } else {
@@ -189,7 +194,7 @@ class MusicPlayer extends EventEmitter {
                     params: params
                 })
             } catch (err) {
-                return console.error(err);
+                return console.error(err)
             }
             try {
                 const videoId = response.data.items[0].id.videoId
@@ -207,7 +212,7 @@ class MusicPlayer extends EventEmitter {
 
         }
         if (queueNumber == 1) { // if play top, refresh the cache {
-            this.cacheNextSong();
+            this.cacheNextSong()
         }
         this.processQueue()
         return reply
@@ -242,7 +247,7 @@ class MusicPlayer extends EventEmitter {
 
     skip() {
         const reply = `Skipping **${this.musicQueue.getNowPlaying().title}**...`
-        this.audioPlayer.stop();
+        this.audioPlayer.stop()
         const embed = new MessageEmbed()
             .setColor(0x027059)
             .setDescription(reply)
@@ -250,16 +255,16 @@ class MusicPlayer extends EventEmitter {
     }
 
     clear() {
-        this.musicQueue.empty();
+        this.musicQueue.empty()
         this._resource = null
         this._nextResource = null
-        this.audioPlayer.stop(true);
+        this.audioPlayer.stop(true)
     }
 
     leave() {
         const reply = `Alright... I'm heading out now ~`
-        this.queueLock = true;
-        this.emit('leave');
+        this.queueLock = true
+        this.emit('leave')
         this.voiceConnection.destroy()
         return reply
     }
@@ -308,63 +313,76 @@ class MusicPlayer extends EventEmitter {
         if (this.musicQueue.nextSongExists()) {
             this.musicQueue.getNextSong().createAudioResource().then(resource => {
                 this._nextResource = resource
-            });
+            })
         } else {
             this._nextResource = null // and last song
         }
     }
 
+    toggleLinkMode(textChannel) {
+        if (!this.linkMode) {
+            this.linkMode = true
+            this.linkModeChannel = textChannel
+        } else {
+            this.linkMode = false
+            this.linkModeChannel = null
+        }
+        return this.linkMode
+    }
+
     async processQueue() {
         // If the queue is locked (already being processed), is empty, or the audio player already cached the next song
         if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource)) {
-            return;
+            return
         }
 
         if (this.musicQueue.isEmpty()) {
-            if (this.audioPlayer.state.status != AudioPlayerStatus.Idle) return;
+            if (this.audioPlayer.state.status != AudioPlayerStatus.Idle) return
             else {
                 this.playerEmbed.stopProgressBar()
-                this.playerEmbed.setSong(null);
+                this.playerEmbed.setSong(null)
                 this.playerEmbed.update()
-                return;
+                return
             }
         }
 
         if (this.audioPlayer.state.status != AudioPlayerStatus.Idle && !this._nextResource) {
-            this.cacheNextSong();
-            return;
+            this.cacheNextSong()
+            return
         }
 
         // Lock the queue to guarantee safe access
-        this.queueLock = true;
+        this.queueLock = true
 
         // Take the first item from the queue
-        const track = this.musicQueue.shift();
+        const track = this.musicQueue.shift()
         this.playerEmbed.setSong(track)
 
         try {
             // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
             if (!this._resource && !this._nextResource) { // Queuing a playlist
-                this._resource = await track.createAudioResource();
-                this.cacheNextSong();
+                this._resource = await track.createAudioResource()
+                this.cacheNextSong()
             } else if (!this._nextResource) { // first time requesting a song
-                this._resource = await track.createAudioResource();
+                this._resource = await track.createAudioResource()
             } else { // on consequent (2+) requests.
-                this._resource = this._nextResource;
-                this.cacheNextSong();
+                this._resource = this._nextResource
+                this.cacheNextSong()
             }
             this.playerEmbed.setAudioResource(this._resource)
-            this.playerEmbed.startProgressBar();
-            this.audioPlayer.play(this._resource);
+            this.playerEmbed.startProgressBar()
+            this.audioPlayer.play(this._resource)
 
         } catch (error) {
             console.log(error)
-            return;
+            return
         }
 
-        this.queueLock = false;
-        return this.processQueue();
+        this.queueLock = false
+        return this.processQueue()
     }
+
+
 
 }
 

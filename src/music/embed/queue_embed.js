@@ -33,7 +33,7 @@ class MusicQueueEmbed {
             text = text + (i + 1) + ". " + songInfo + "\n"
         }
 
-        return text;
+        return text
 
     }
 
@@ -48,7 +48,7 @@ class MusicQueueEmbed {
             .setAuthor("In Queue")
             .setDescription(description)
 
-        return { embeds: [embed], components: [this.actionRow], fetchReply: true };
+        return { embeds: [embed], components: [this.actionRow], fetchReply: true }
     }
 
     async send() {
@@ -57,21 +57,21 @@ class MusicQueueEmbed {
 
     async resend() {
         this.embedMessage.delete()
-        this.embedMessage = await this.textChannel.send(this.build());
+        this.embedMessage = await this.textChannel.send(this.build())
     }
     update() {
         if (this.embedMessage)
-            this.embedMessage.edit(this.build());
+            this.embedMessage.edit(this.build())
     }
     nextPage() {
         if (this.page <= this.getMaxPage()) {
-            this.page++;
+            this.page++
         }
         this.updateQueueButtons()
     }
     prevPage() {
         if (this.page > 1) {
-            this.page--;
+            this.page--
         }
         this.updateQueueButtons()
     }
@@ -109,7 +109,7 @@ class MusicQueueEmbed {
                 this.prevPageButton,
                 this.nextPageButton,
                 this.lastPageButton
-            );
+            )
     }
     disableQueueButtons() {
         this.firstPageButton.setDisabled(true)

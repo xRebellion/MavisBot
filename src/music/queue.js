@@ -1,6 +1,6 @@
 const helper = require('../util/helper.js')
 
-const axios = require('axios').default;
+const axios = require('axios').default
 
 const YOUTUBE_VIDEOS_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 class MusicQueue {
@@ -8,21 +8,21 @@ class MusicQueue {
     constructor() {
         this.songs = []; // IDs only
         this.nowPlaying = null; // ID only
-        this.songMap = new Map();
+        this.songMap = new Map()
     }
 
     addSong(song) {
-        this.songs.push(song.videoId);
-        this.songMap.set(song.videoId, song);
+        this.songs.push(song.videoId)
+        this.songMap.set(song.videoId, song)
     }
 
     addSongToIndex(song, index) { // returns index of added song
         if (index < 0) {
-            this.addSong(song);
+            this.addSong(song)
             return this.songs.length - 1
         } else {
-            this.songs.splice(index, 0, song.videoId);
-            this.songMap.set(song.videoId, song);
+            this.songs.splice(index, 0, song.videoId)
+            this.songMap.set(song.videoId, song)
             return index
         }
     }
@@ -39,7 +39,7 @@ class MusicQueue {
     }
 
     getSong(index) {
-        return this.songMap.get(this.songs[index]);
+        return this.songMap.get(this.songs[index])
     }
     getSongByVideoID(id) {
         return this.songMap.get(id)
@@ -55,25 +55,25 @@ class MusicQueue {
         return this.songMap.get(this.nowPlaying)
     }
     shuffle() {
-        let currentIndex = this.songs.length, randomIndex;
+        let currentIndex = this.songs.length, randomIndex
 
         // While there remain elements to shuffle...
         while (currentIndex != 1) {
 
             // Pick a remaining element...
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex--;
+            randomIndex = Math.floor(Math.random() * currentIndex)
+            currentIndex--
 
             // And swap it with the current element.
             [this.songs[currentIndex], this.songs[randomIndex]] = [
-                this.songs[randomIndex], this.songs[currentIndex]];
+                this.songs[randomIndex], this.songs[currentIndex]]
         }
     }
 
     empty() {
-        this.songs = [];
-        this.nowPlaying = null;
-        this.songMap.clear();
+        this.songs = []
+        this.nowPlaying = null
+        this.songMap.clear()
     }
 
     shift() {
@@ -81,7 +81,7 @@ class MusicQueue {
             this.songMap.delete(this.nowPlaying)
         } // in case of dupes, don't delete map if there are
         this.nowPlaying = this.songs.shift()
-        return this.getNowPlaying();
+        return this.getNowPlaying()
     }
 
     isEmpty() {
@@ -95,7 +95,7 @@ class MusicQueue {
     move(from, to) {
         if (from >= this.songs.length || to >= this.songs.length)
             return
-        this.songs.splice(to, 0, this.songs.splice(from, 1)[0]);
+        this.songs.splice(to, 0, this.songs.splice(from, 1)[0])
     }
 
     remove(position) {
@@ -116,8 +116,8 @@ class MusicQueue {
 
             let videoId = id
             q = q + videoId + ","
-            i++;
-            j++;
+            i++
+            j++
             if (i == 50 || j == this.songs.length) {
                 let response = null
                 q = q.slice(0, -1)
@@ -131,9 +131,9 @@ class MusicQueue {
                         params: params
                     })
                 } catch (err) {
-                    return console.error(err);
+                    return console.error(err)
                 }
-                details = details.concat(response.data.items);
+                details = details.concat(response.data.items)
                 q = ""
                 i = 0
 

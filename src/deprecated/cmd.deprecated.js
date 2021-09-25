@@ -1,18 +1,18 @@
 switch (cmd) {
     // m/register
     case 'register':
-        message.channel.send('Channel Registered!~');
+        message.channel.send('Channel Registered!~')
         addChannel(message.channel.id)
-        break;
+        break
 
     case 'reactall':
         reactToAllMessage(message.channel)
-        break;
+        break
     case 'initRoleMessage':
-        roles.initRoleMessage(message.guild.id, args[0]);
-        console.log(args[1]);
-        break;
+        roles.initRoleMessage(message.guild.id, args[0])
+        console.log(args[1])
+        break
     case 'initRole':
-        roles.initRole(message.guild.id, args[0]);
-        console.log(args[1]);
+        roles.initRole(message.guild.id, args[0])
+        console.log(args[1])
 }

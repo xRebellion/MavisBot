@@ -1,14 +1,14 @@
-const { demuxProbe, createAudioResource } = require("@discordjs/voice");
-const ytdl = require("youtube-dl-exec").raw;
+const { demuxProbe, createAudioResource } = require("@discordjs/voice")
+const ytdl = require("youtube-dl-exec").raw
 const { getInfo } = require('ytdl-core')
 
 class Song {
     constructor(videoId, title, thumbnail, duration, channelName, requestedBy) {
-        this.videoId = videoId;
-        this.title = title;
-        this.thumbnail = thumbnail;
-        this.duration = duration;
-        this.channelName = channelName;
+        this.videoId = videoId
+        this.title = title
+        this.thumbnail = thumbnail
+        this.duration = duration
+        this.channelName = channelName
         this.owner = requestedBy
     }
 
@@ -22,16 +22,16 @@ class Song {
                     f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
                 },
                 { stdio: ['ignore', 'pipe', 'ignore'] },
-            );
+            )
             if (!process.stdout) {
-                reject(new Error('No stdout'));
-                return;
+                reject(new Error('No stdout'))
+                return
             }
-            const stream = process.stdout;
+            const stream = process.stdout
             const onError = (error) => {
-                if (!process.killed) process.kill();
-                stream.resume();
-                reject(error);
+                if (!process.killed) process.kill()
+                stream.resume()
+                reject(error)
             }
             process.once('spawn', () => {
                 demuxProbe(stream)

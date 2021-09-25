@@ -1,6 +1,6 @@
 const helper = require('../../util/helper.js')
 
-const { MessageEmbed } = require("discord.js");
+const { MessageEmbed } = require("discord.js")
 
 class MusicPlayerEmbed {
     constructor(textChannel) {
@@ -9,7 +9,7 @@ class MusicPlayerEmbed {
         this.progressBar = ""
         this.song = null
         this.audioResource = null
-        this.destroyed = false;
+        this.destroyed = false
     }
     build() {
         if (!this.song) return new MessageEmbed()
@@ -31,15 +31,15 @@ class MusicPlayerEmbed {
         this.song = song
     }
     async send() {
-        this.embedMessage = await this.textChannel.send({ embeds: [this.build()] });
+        this.embedMessage = await this.textChannel.send({ embeds: [this.build()] })
     }
     async resend() {
         this.embedMessage.delete()
-        this.embedMessage = await this.textChannel.send({ embeds: [this.build()] });
+        this.embedMessage = await this.textChannel.send({ embeds: [this.build()] })
     }
     update() {
         if (this.embedMessage)
-            this.embedMessage.edit({ embeds: [this.build()] });
+            this.embedMessage.edit({ embeds: [this.build()] })
     }
     setAudioResource(resource) {
         this.audioResource = resource
@@ -59,13 +59,13 @@ class MusicPlayerEmbed {
     destroy() {
         if (!this.destroyed) {
             this.stopProgressBar()
-            this.embedMessage.delete();
+            this.embedMessage.delete()
             this.textChannel = null
             this.embedMessage = null
             this.progressBar = ""
             this.song = null
             this.audioResource = null
-            this.destroyed = true;
+            this.destroyed = true
         }
     }
 }

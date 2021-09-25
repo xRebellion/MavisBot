@@ -1,13 +1,13 @@
-const { Interaction } = require('discord.js');
-const msgs = require('../../data/messages.js');
-const MusicPlayer = require('./player.js');
+const { Interaction } = require('discord.js')
+const msgs = require('../../data/messages.js')
+const MusicPlayer = require('./player.js')
 
-const serverMap = new Map();
+const serverMap = new Map()
 
 // async function execute(guildId, voiceChannel, requester, query)
 async function execute(messageOrInteraction, query, queueNumber) {
     if (messageOrInteraction instanceof Interaction)
-        messageOrInteraction.deferReply();
+        messageOrInteraction.deferReply()
     const guildId = messageOrInteraction.guild.id
     const textChannel = messageOrInteraction.channel
     const voiceChannel = messageOrInteraction.member.voice.channel
@@ -21,9 +21,9 @@ async function execute(messageOrInteraction, query, queueNumber) {
         else
             return messageOrInteraction.reply(msgs.MUSIC_NO_ONE_IN_THE_ROOM)
     }
-    const permissions = voiceChannel.permissionsFor(messageOrInteraction.client.user);
+    const permissions = voiceChannel.permissionsFor(messageOrInteraction.client.user)
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
-        return messageOrInteraction.editReply(msgs.NO_MUSIC_PERMISSION);
+        return messageOrInteraction.editReply(msgs.NO_MUSIC_PERMISSION)
     }
 
     if (!serverPlayer) {
@@ -33,13 +33,13 @@ async function execute(messageOrInteraction, query, queueNumber) {
             1
         )
         serverPlayer.on('leave', () => { serverMap.delete(guildId) })
-        serverMap.set(guildId, serverPlayer);
+        serverMap.set(guildId, serverPlayer)
 
     }
     if (messageOrInteraction instanceof Interaction)
-        messageOrInteraction.editReply(await serverPlayer.enqueue(query, requester, queueNumber));
+        messageOrInteraction.editReply(await serverPlayer.enqueue(query, requester, queueNumber))
     else
-        messageOrInteraction.reply(await serverPlayer.enqueue(query, requester, queueNumber));
+        messageOrInteraction.reply(await serverPlayer.enqueue(query, requester, queueNumber))
 }
 
 function skip(messageOrInteraction) {
@@ -47,8 +47,8 @@ function skip(messageOrInteraction) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
-    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
     messageOrInteraction.reply(serverPlayer.skip())
 }
 
@@ -58,9 +58,9 @@ function leave(messageOrInteraction) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
-    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
-    messageOrInteraction.reply(serverPlayer.leave());
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
+    messageOrInteraction.reply(serverPlayer.leave())
 }
 
 function move(messageOrInteraction, from, to) {
@@ -68,8 +68,8 @@ function move(messageOrInteraction, from, to) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
-    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
 
     if (!from) {
         messageOrInteraction.reply('Missing move arguments!')
@@ -89,10 +89,10 @@ function shuffle(messageOrInteraction) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
-    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
 
-    messageOrInteraction.reply(serverPlayer.shuffle());
+    messageOrInteraction.reply(serverPlayer.shuffle())
 }
 
 async function viewQueue(messageOrInteraction, page) {
@@ -100,8 +100,8 @@ async function viewQueue(messageOrInteraction, page) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
-    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
 
     if (!page) {
         page = 1
@@ -119,21 +119,21 @@ async function viewQueue(messageOrInteraction, page) {
                 || i.customId === "queueLastPage"
             )
     }
-    const collector = queueMessage.channel.createMessageComponentCollector({ filter, idle: 15000 });
+    const collector = queueMessage.channel.createMessageComponentCollector({ filter, idle: 15000 })
     collector.on('collect', async i => {
         switch (i.customId) {
             case "queueFirstPage":
                 i.update(serverPlayer.viewFirstPageQueue())
-                break;
+                break
             case "queuePrevPage":
                 i.update(serverPlayer.viewPrevPageQueue())
-                break;
+                break
             case "queueNextPage":
                 i.update(serverPlayer.viewNextPageQueue())
-                break;
+                break
             case "queueLastPage":
                 i.update(serverPlayer.viewLastPageQueue())
-                break;
+                break
         }
     })
 
@@ -150,8 +150,8 @@ function nowPlaying(messageOrInteraction) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
-    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
 
     serverPlayer.bumpPlayer()
 }
@@ -161,16 +161,44 @@ function remove(messageOrInteraction, position) {
     const voiceChannel = messageOrInteraction.member.voice.channel
 
     const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING);
-    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL);
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
 
     serverPlayer.remove(position - 1)
 }
+
 
 function getMusicPlayer(guildId) {
     return serverMap.get(guildId)
 }
 
+function isLinkMode(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return null
+    else return serverPlayer.linkMode
+}
+
+function getLinkModeChannel(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return null
+    else return serverPlayer.linkModeChannel
+}
+
+function toggleLinkMode(messageOrInteraction) {
+    const guildId = messageOrInteraction.guild.id
+    const serverPlayer = serverMap.get(guildId)
+    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
+    else {
+        if (serverPlayer.toggleLinkMode(messageOrInteraction.channel))
+            return messageOrInteraction.reply("Link mode **enabled**! Now you can play songs by just putting a YouTube link on this channel!")
+        else
+            return messageOrInteraction.reply("Link mode **disabled**!")
+    }
+}
 module.exports = {
     execute,
     leave,
@@ -181,4 +209,7 @@ module.exports = {
     nowPlaying,
     remove,
     getMusicPlayer,
+    isLinkMode,
+    getLinkModeChannel,
+    toggleLinkMode,
 }
