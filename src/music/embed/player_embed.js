@@ -17,6 +17,7 @@ class MusicPlayerEmbed {
             .setAuthor("Music Player")
             .setTitle("Waiting...") // Song Name
             .setURL("") // Song URL
+            .setThumbnail("https://user-images.githubusercontent.com/32483348/133907757-37365e0f-3c97-4e0a-becb-6d57b82ce1d7.png")
         this.progressBar = helper.createProgressBar(this.audioResource.playbackDuration, this.song.duration * 1000, "░", "▓")
         return new MessageEmbed()
             .setColor(0x027059)
