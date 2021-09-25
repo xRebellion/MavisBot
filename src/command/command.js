@@ -78,7 +78,7 @@ async function processCmd(message) {
                     music.execute(message, joinedArgs, -1);
                     break;
                 case 'playtop':
-                    music.execute(message, joinedArgs, 0);
+                    music.execute(message, joinedArgs, 1);
                     break;
                 case 'q':
                 case 'queue':
