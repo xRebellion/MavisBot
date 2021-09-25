@@ -12,8 +12,15 @@ async function processSlashCmd(interaction) {
         .setDescription(msgs.HELP)
     try {
         switch (interaction.commandName) {
+            case 'join':
+                music.join(interaction)
+                break;
             case 'leave':
                 music.leave(interaction)
+                break
+            case 'lm':
+            case 'linkmode':
+                music.toggleLinkMode(interaction)
                 break
             case 'move':
                 music.move(
