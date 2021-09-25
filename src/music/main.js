@@ -221,14 +221,34 @@ function getLinkModeChannel(messageOrInteraction) {
 
 function toggleLinkMode(messageOrInteraction) {
     const guildId = messageOrInteraction.guild.id
-    const serverPlayer = serverMap.get(guildId)
-    if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
-    else {
-        if (serverPlayer.toggleLinkMode(messageOrInteraction.channel))
-            return messageOrInteraction.reply("Link mode **enabled**! Now you can play songs by just putting a YouTube link on this channel!")
-        else
-            return messageOrInteraction.reply("Link mode **disabled**!")
+    const textChannel = messageOrInteraction.channel
+    const voiceChannel = messageOrInteraction.member.voice.channel
+
+    let serverPlayer = serverMap.get(messageOrInteraction.guild.id)
+
+    if (!voiceChannel) {
+        return messageOrInteraction.reply(msgs.MUSIC_NO_ONE_IN_THE_ROOM)
     }
+    const permissions = voiceChannel.permissionsFor(messageOrInteraction.client.user)
+    if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
+        return messageOrInteraction.reply(msgs.NO_MUSIC_PERMISSION)
+    }
+
+    if (!serverPlayer) {
+        serverPlayer = new MusicPlayer(
+            textChannel,
+            voiceChannel,
+            1
+        )
+        serverPlayer.on('leave', () => { serverMap.delete(guildId) })
+        serverMap.set(guildId, serverPlayer)
+    }
+
+    if (serverPlayer.toggleLinkMode(messageOrInteraction.channel))
+        return messageOrInteraction.reply("Link mode **enabled**! Now you can play songs by just putting a YouTube link on this channel!")
+    else
+        return messageOrInteraction.reply("Link mode **disabled**!")
+
 }
 module.exports = {
     execute,
