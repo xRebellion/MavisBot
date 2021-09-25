@@ -195,7 +195,7 @@ function remove(messageOrInteraction, position) {
     if (!serverPlayer) return messageOrInteraction.reply(msgs.MUSIC_PLAYER_NOT_PLAYING)
     if (voiceChannel != serverPlayer.voiceChannel) return messageOrInteraction.reply(msgs.MUSIC_WRONG_VOICE_CHANNEL)
 
-    serverPlayer.remove(position - 1)
+    return messageOrInteraction.reply(serverPlayer.remove(position - 1))
 }
 
 
