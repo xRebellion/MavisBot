@@ -1,4 +1,3 @@
-
 module.exports = [
     {
         name: 'play',
@@ -23,6 +22,10 @@ module.exports = [
                 required: true
             }
         ]
+    },
+    {
+        name: 'lm',
+        description: 'toggles link mode - you can play songs just by pasting the youtube url link in that text channel'
     },
     {
         name: 'queue',
@@ -69,6 +72,10 @@ module.exports = [
     {
         name: 'skip',
         description: 'skips what\'s playing right now'
+    },
+    {
+        name: 'join',
+        description: 'enters the voice channel you\'re in'
     },
     {
         name: 'leave',
