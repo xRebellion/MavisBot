@@ -42,6 +42,8 @@ class MusicPlayer extends EventEmitter {
             if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
                 // If the Idle state is entered from a non-Idle state, it means that an audio resource has finished playing.
                 // The queue is then processed to start playing the next track, if one is available.
+                this.playerEmbed.stopProgressBar()
+
                 this._timeout = setTimeout(() => {
                     this.leave()
                 }, 15 * 60 * 1000);
@@ -128,7 +130,7 @@ class MusicPlayer extends EventEmitter {
             const song = await Song.from(videoId, author)
             const index = this.musicQueue.addSongToIndex(song, queueNumber - 1)
 
-            const enqueueEmbed = new EnqueueEmbed(song, index, this.musicQueue)
+            const enqueueEmbed = new EnqueueEmbed(song, index + 1)
             reply = { embeds: [enqueueEmbed.build()] }
 
         } else if (query.startsWith(YOUTUBE_PLAYLIST_URL)) {
@@ -195,7 +197,7 @@ class MusicPlayer extends EventEmitter {
 
                 const index = this.musicQueue.addSongToIndex(song, queueNumber - 1)
 
-                const enqueueEmbed = new EnqueueEmbed(song, index, this.musicQueue)
+                const enqueueEmbed = new EnqueueEmbed(song, index + 1)
                 reply = { embeds: [enqueueEmbed.build()] }
 
             } catch (err) {

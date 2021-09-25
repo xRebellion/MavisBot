@@ -27,6 +27,10 @@ client.once('disconnect', () => {
 	console.log('Disconnect!');
 });
 
+client.on('error', err => {
+	console.error('Client Error: ' + err)
+})
+
 
 
 client.on('messageCreate', command.processCmd)

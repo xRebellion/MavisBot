@@ -16,10 +16,10 @@ class MusicQueue {
         this.songMap.set(song.videoId, song);
     }
 
-    addSongToIndex(song, index) {
+    addSongToIndex(song, index) { // returns index of added song
         if (index < 0) {
             this.addSong(song);
-            return 0
+            return this.songs.length - 1
         } else {
             this.songs.splice(index, 0, song.videoId);
             this.songMap.set(song.videoId, song);
