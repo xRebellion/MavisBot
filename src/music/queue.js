@@ -111,10 +111,10 @@ class MusicQueue {
         let i = 0
         let j = 0
         let details = []
-
-        for (const id of this.songs) {
-
+        const songs = this.songs.slice()
+        for (const id of songs) {
             let videoId = id
+            if (this.songMap.get(videoId).duration > 0) continue
             q = q + videoId + ","
             i++
             j++
