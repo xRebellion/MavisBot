@@ -265,12 +265,13 @@ class MusicPlayer extends EventEmitter {
         const reply = `Alright... I'm heading out now ~`
         this.queueLock = true
         this.emit('leave')
+        clearTimeout(this._timeout)
         this.voiceConnection.destroy()
         return reply
     }
 
     shuffle() {
-        reply = `Shuffled **${this.musicQueue.songs.length}** songs!`
+        const reply = `Shuffled **${this.musicQueue.songs.length}** songs!`
         this.musicQueue.shuffle()
         this.cacheNextSong()
         const embed = new MessageEmbed()
@@ -374,6 +375,8 @@ class MusicPlayer extends EventEmitter {
             this.audioPlayer.play(this._resource)
 
         } catch (error) {
+            console.log(this._resource)
+            console.log(this._nextResource)
             console.log(error)
             return
         }
