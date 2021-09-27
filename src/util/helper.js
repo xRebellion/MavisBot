@@ -43,7 +43,14 @@ function ptToSeconds(durationStr) {
     if (!durationStr.startsWith('PT')) {
         return -1
     }
-    durationStr = durationStr.slice(2, -1) // removes PT and S
+    if (!durationStr.endsWith('S')) {
+        if (!durationStr.endsWith('M')) {
+            durationStr += "0M0S"
+        } else {
+            durationStr += "0S"
+        }
+    }
+    durationStr = durationStr.slice(2, -1)
 
     let durationArray = durationStr.split(/H|M/)
 
