@@ -99,7 +99,7 @@ class MusicQueue {
     }
 
     remove(position) {
-        const removed = this.songs.splice(position, 1)
+        const removed = this.songs.splice(position, 1)[0]
         if (!this.songs.includes(removed)) {
             this.songMap.delete(removed)
         } // in case of dupes, don't delete map if there are

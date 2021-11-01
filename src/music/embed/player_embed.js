@@ -19,13 +19,19 @@ class MusicPlayerEmbed {
             .setURL("") // Song URL
             .setThumbnail("https://user-images.githubusercontent.com/32483348/133907757-37365e0f-3c97-4e0a-becb-6d57b82ce1d7.png")
         this.progressBar = helper.createProgressBar(this.audioResource.playbackDuration, this.song.duration * 1000, "░", "▓")
+        let thumbnailUrl = null
+        if (!this.song.thumbnail.url) {
+            thumbnailUrl = "https://user-images.githubusercontent.com/32483348/133907757-37365e0f-3c97-4e0a-becb-6d57b82ce1d7.png"
+        } else {
+            thumbnailUrl = this.song.thumbnail.url
+        }
         return new MessageEmbed()
             .setColor(0x027059)
             .setAuthor("Now Playing")
             .setTitle(":minidisc: " + this.song.title) // Song Name
             .setDescription(this.progressBar)
             .setURL(this.song.getVideoURL()) // Song URL
-            .setImage(this.song.thumbnail.url)
+            .setImage(thumbnailUrl)
             .setFooter(`Requested by ${this.song.owner.tag}`, this.song.owner.displayAvatarURL())
     }
     setSong(song) {
@@ -39,13 +45,16 @@ class MusicPlayerEmbed {
         this.embedMessage = await this.textChannel.send({ embeds: [this.build()] })
     }
     update() {
-        if (this.embedMessage)
+        if (this.embedMessage || !this.embedMessage.deleted)
             this.embedMessage.edit({ embeds: [this.build()] })
     }
     setAudioResource(resource) {
         this.audioResource = resource
     }
     async startProgressBar() {
+        if (this.timer) {
+            this.stopProgressBar()
+        }
         this.timer = setInterval(() => {
             this.updateProgressBar()
             this.update()

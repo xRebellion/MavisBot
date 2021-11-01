@@ -50,6 +50,7 @@ class MusicPlayer extends EventEmitter {
                 this.playerEmbed.stopProgressBar()
 
                 this._timeout = setTimeout(() => {
+                    console.log("I still wanted to leave anyway")
                     this.leave()
                 }, 15 * 60 * 1000)
                 this._resource = null
@@ -265,6 +266,7 @@ class MusicPlayer extends EventEmitter {
         const reply = `Alright... I'm heading out now ~`
         this.queueLock = true
         this.emit('leave')
+        console.log("Leave. Timeout ID: " + this._timeout)
         clearTimeout(this._timeout)
         this.voiceConnection.destroy()
         return reply
@@ -332,57 +334,69 @@ class MusicPlayer extends EventEmitter {
     }
 
     async processQueue() {
-        // If the queue is locked (already being processed), is empty, or the audio player already cached the next song
-        if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource)) {
-            return
-        }
-
-        if (this.musicQueue.isEmpty()) {
-            if (this.audioPlayer.state.status != AudioPlayerStatus.Idle) return
-            else {
-                this.playerEmbed.stopProgressBar()
-                this.playerEmbed.setSong(null)
-                this.playerEmbed.update()
+        try {
+            // If the queue is locked (already being processed), is empty, or the audio player already cached the next song
+            if (this.queueLock || (this.audioPlayer.state.status != AudioPlayerStatus.Idle && this._nextResource)) {
                 return
             }
-        }
 
-        if (this.audioPlayer.state.status != AudioPlayerStatus.Idle && !this._nextResource) {
-            this.cacheNextSong()
-            return
-        }
-
-        // Lock the queue to guarantee safe access
-        this.queueLock = true
-
-        // Take the first item from the queue
-        const track = this.musicQueue.shift()
-        this.playerEmbed.setSong(track)
-
-        try {
-            // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-            if (!this._resource && !this._nextResource) { // Queuing a playlist
-                this._resource = await track.createAudioResource()
-                this.cacheNextSong()
-            } else if (!this._nextResource) { // first time requesting a song
-                this._resource = await track.createAudioResource()
-            } else { // on consequent (2+) requests.
-                this._resource = this._nextResource
-                this.cacheNextSong()
+            if (this.musicQueue.isEmpty()) {
+                if (this.audioPlayer.state.status != AudioPlayerStatus.Idle) return
+                else {
+                    console.log("Supposedly done")
+                    console.log(this.musicQueue)
+                    this.musicQueue.empty()
+                    console.log(this.musicQueue)
+                    this.playerEmbed.stopProgressBar()
+                    this.playerEmbed.setSong(null)
+                    this.playerEmbed.update()
+                    return
+                }
             }
-            this.playerEmbed.setAudioResource(this._resource)
-            this.playerEmbed.startProgressBar()
-            this.audioPlayer.play(this._resource)
 
+            if (this.audioPlayer.state.status != AudioPlayerStatus.Idle && !this._nextResource) {
+                this.cacheNextSong()
+                return
+            }
+
+            // Lock the queue to guarantee safe access
+            this.queueLock = true
+
+            // Take the first item from the queue
+            const track = this.musicQueue.shift()
+            this.playerEmbed.setSong(track)
+
+            try {
+                // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
+                if (!this._resource && !this._nextResource) { // Queuing a playlist
+                    this._resource = await track.createAudioResource()
+                    this.cacheNextSong()
+                } else if (!this._nextResource) { // first time requesting a song
+                    this._resource = await track.createAudioResource()
+                } else { // on consequent (2+) requests.
+                    this._resource = this._nextResource
+                    this.cacheNextSong()
+                }
+                this.playerEmbed.setAudioResource(this._resource)
+                this.playerEmbed.startProgressBar()
+                this.audioPlayer.play(this._resource)
+
+            } catch (error) {
+                console.log(this._resource)
+                console.log(this._nextResource)
+                console.log(error)
+                return
+            }
+
+            this.queueLock = false
         } catch (error) {
             console.log(this._resource)
             console.log(this._nextResource)
             console.log(error)
-            return
+            return this.processQueue()
         }
-
-        this.queueLock = false
         return this.processQueue()
+
     }
 
 
