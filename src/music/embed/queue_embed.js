@@ -45,7 +45,9 @@ class MusicQueueEmbed {
             description = this._queueToText(this.page)
         }
         const embed = new MessageEmbed()
-            .setAuthor("In Queue")
+            .setAuthor({
+                name: "In Queue"
+            })
             .setDescription(description)
 
         return { embeds: [embed], components: [this.actionRow], fetchReply: true }

@@ -10,11 +10,14 @@ class MusicPlayerEmbed {
         this.song = null
         this.audioResource = null
         this.destroyed = false
+        this._embedLock = false
     }
     build() {
         if (!this.song) return new MessageEmbed()
             .setColor(0x027059)
-            .setAuthor("Music Player")
+            .setAuthor({
+                name: "Music Player"
+            })
             .setTitle("Waiting...") // Song Name
             .setURL("") // Song URL
             .setThumbnail("https://user-images.githubusercontent.com/32483348/133907757-37365e0f-3c97-4e0a-becb-6d57b82ce1d7.png")
@@ -25,14 +28,25 @@ class MusicPlayerEmbed {
         } else {
             thumbnailUrl = this.song.thumbnail.url
         }
+
+
+
+
         return new MessageEmbed()
             .setColor(0x027059)
-            .setAuthor("Now Playing")
+            .setAuthor({
+                name: "Now Playing"
+            })
             .setTitle(":minidisc: " + this.song.title) // Song Name
             .setDescription(this.progressBar)
             .setURL(this.song.getVideoURL()) // Song URL
             .setImage(thumbnailUrl)
-            .setFooter(`Requested by ${this.song.owner.tag}`, this.song.owner.displayAvatarURL())
+            .setFooter({
+                text: `Requested by ${this.song.owner.tag}`,
+                iconURL: this.song.owner.displayAvatarURL()
+            })
+
+
     }
     setSong(song) {
         this.song = song
@@ -41,11 +55,12 @@ class MusicPlayerEmbed {
         this.embedMessage = await this.textChannel.send({ embeds: [this.build()] })
     }
     async resend() {
-        this.embedMessage.delete()
+        if (this.embedMessage && this.embedMessage.editable)
+            this.embedMessage.delete()
         this.embedMessage = await this.textChannel.send({ embeds: [this.build()] })
     }
     update() {
-        if (this.embedMessage || !this.embedMessage.deleted)
+        if (this.embedMessage && this.embedMessage.editable)
             this.embedMessage.edit({ embeds: [this.build()] })
     }
     setAudioResource(resource) {

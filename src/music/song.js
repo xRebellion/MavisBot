@@ -1,5 +1,5 @@
 const { demuxProbe, createAudioResource } = require("@discordjs/voice")
-const ytdl = require("youtube-dl-exec").raw
+const ytdl = require("youtube-dl-exec").exec
 const { getInfo } = require('ytdl-core')
 
 class Song {
@@ -27,6 +27,7 @@ class Song {
                 reject(new Error('No stdout'))
                 return
             }
+            console.log(process)
             const stream = process.stdout
             const onError = (error) => {
                 if (!process.killed) process.kill()
@@ -47,9 +48,9 @@ class Song {
     getReadableDuration() {
 
         if (this.duration < 3600) {
-            return new Date(this.duration * 1000).toISOString().substr(14, 5)
+            return new Date(this.duration * 1000).toISOString().substring(14, 5)
         } else {
-            return new Date(this.duration * 1000).toISOString().substr(11, 8)
+            return new Date(this.duration * 1000).toISOString().substring(11, 8)
         }
     }
 

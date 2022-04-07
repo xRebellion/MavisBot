@@ -59,7 +59,7 @@ class MusicPlayer extends EventEmitter {
             } else if (newState.status === AudioPlayerStatus.Playing) {
                 // If the Playing state has been entered, then a new track has started playback.
                 clearTimeout(this._timeout)
-                this.playerEmbed.resend(this.musicQueue.getNowPlaying())
+                this.playerEmbed.resend()
             }
         })
 
@@ -346,10 +346,9 @@ class MusicPlayer extends EventEmitter {
                     console.log("Supposedly done")
                     console.log(this.musicQueue)
                     this.musicQueue.empty()
-                    console.log(this.musicQueue)
                     this.playerEmbed.stopProgressBar()
                     this.playerEmbed.setSong(null)
-                    this.playerEmbed.update()
+                    this.playerEmbed.resend()
                     return
                 }
             }
@@ -366,34 +365,29 @@ class MusicPlayer extends EventEmitter {
             const track = this.musicQueue.shift()
             this.playerEmbed.setSong(track)
 
-            try {
-                // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-                if (!this._resource && !this._nextResource) { // Queuing a playlist
-                    this._resource = await track.createAudioResource()
-                    this.cacheNextSong()
-                } else if (!this._nextResource) { // first time requesting a song
-                    this._resource = await track.createAudioResource()
-                } else { // on consequent (2+) requests.
-                    this._resource = this._nextResource
-                    this.cacheNextSong()
-                }
-                this.playerEmbed.setAudioResource(this._resource)
-                this.playerEmbed.startProgressBar()
-                this.audioPlayer.play(this._resource)
-
-            } catch (error) {
-                console.log(this._resource)
-                console.log(this._nextResource)
-                console.log(error)
-                return
+            // Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
+            if (!this._resource && !this._nextResource) { // Queuing a playlist
+                this._resource = await track.createAudioResource()
+                this.cacheNextSong()
+            } else if (!this._nextResource) { // first time requesting a song
+                this._resource = await track.createAudioResource()
+            } else { // on consequent (2+) requests.
+                this._resource = this._nextResource
+                this.cacheNextSong()
             }
+
+            this.playerEmbed.setAudioResource(this._resource)
+            this.playerEmbed.startProgressBar()
+
+            this.audioPlayer.play(this._resource)
+            console.log("Current: ", this._resource)
 
             this.queueLock = false
         } catch (error) {
-            console.log(this._resource)
-            console.log(this._nextResource)
+            console.log("Error when trying to play / convert resource")
+            console.log("Current: ", this._resource)
+            console.log("Next: ", this._nextResource)
             console.log(error)
-            return this.processQueue()
         }
         return this.processQueue()
 

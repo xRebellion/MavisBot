@@ -15,7 +15,10 @@ class EnqueueEmbed {
             .setColor(0x027059)
             .setTitle(this.title)
             .setURL(this.videoURL)
-            .setAuthor("Added to queue", this.user.displayAvatarURL())
+            .setAuthor({
+                name: "Added to queue",
+                iconURL: this.user.displayAvatarURL()
+            })
             .setThumbnail(this.thumbnail.url)
             .addFields(
                 { name: "Channel", value: this.channelName, inline: true },

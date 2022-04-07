@@ -2,9 +2,6 @@
   "name": "mavis-bot",
   "version": "1.0.0",
   "description": "A simple bot for personal needs.",
-  "engines": {
-    "node": "16.9.1"
-  },
   "main": "start.js",
   "scripts": {
     "start": "node start.js"
@@ -12,14 +9,14 @@
   "author": "Rebellion a.k.a. Daniel Y",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/voice": "^0.6.0",
-    "axios": "^0.21.2",
+    "@discordjs/voice": "^0.8.0",
+    "axios": "^0.26.1",
     "discord.js": "^13.1.0",
     "ffmpeg": "0.0.4",
-    "ffmpeg-static": "^4.1.0",
+    "ffmpeg-static": "^5.0.0",
     "tweetnacl": "^1.0.3",
     "winston": "^3.3.3",
-    "youtube-dl-exec": "^1.2.6",
+    "youtube-dl-exec": "^2.0.9",
     "ytdl-core": "^4.11.0"
   }
 }

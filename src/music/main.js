@@ -169,7 +169,7 @@ async function viewQueue(messageOrInteraction, page) {
     })
 
     collector.on('end', async _ => {
-        if (!queueMessage.deleted) {
+        if (queueMessage.editable) {
             serverPlayer.disableQueueButtons()
             serverPlayer.musicQueueEmbed.update()
         }
