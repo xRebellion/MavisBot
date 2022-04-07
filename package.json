@@ -14,9 +14,9 @@
     "discord.js": "^13.1.0",
     "ffmpeg": "0.0.4",
     "ffmpeg-static": "^5.0.0",
+    "play-dl": "^1.9.3",
     "tweetnacl": "^1.0.3",
     "winston": "^3.3.3",
-    "youtube-dl-exec": "^2.0.9",
     "ytdl-core": "^4.11.0"
   }
 }
