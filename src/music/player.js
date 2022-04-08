@@ -62,6 +62,9 @@ class MusicPlayer extends EventEmitter {
                 this.playerEmbed.resend()
             }
         })
+        this.audioPlayer.on('error', error => {
+            console.error(`Error: ${error.message} with resource ${error.resource.metadata.title}`);
+        });
 
         this.voiceConnection.on('stateChange', async (_, newState) => {
             if (newState.status === VoiceConnectionStatus.Disconnected) {
@@ -380,7 +383,9 @@ class MusicPlayer extends EventEmitter {
             this.playerEmbed.startProgressBar()
 
             this.audioPlayer.play(this._resource)
+
             console.log("Current: ", this._resource)
+            await helper.delay(1000)
 
             this.queueLock = false
         } catch (error) {
