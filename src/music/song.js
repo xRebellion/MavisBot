@@ -21,13 +21,11 @@ class Song {
                     q: '',
                     f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
                 },
-                { stdio: ['ignore', 'pipe', 'ignore'] },
             )
             if (!process.stdout) {
                 reject(new Error('No stdout'))
                 return
             }
-            console.log(process)
             const stream = process.stdout
             const onError = (error) => {
                 if (!process.killed) process.kill()
