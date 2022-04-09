@@ -1,6 +1,8 @@
 const { createAudioResource } = require("@discordjs/voice")
 const playdl = require("play-dl")
 const { getInfo } = require('ytdl-core')
+const helper = require('../util/helper')
+
 
 class Song {
     constructor(videoId, title, thumbnail, duration, channelName, requestedBy) {
@@ -23,17 +25,9 @@ class Song {
     getVideoURL() {
         return "https://www.youtube.com/watch?v=" + this.videoId
     }
-    getReadableDuration() {
-
-        if (this.duration < 3600) {
-            return new Date(this.duration * 1000).toISOString().substring(14, 5)
-        } else {
-            return new Date(this.duration * 1000).toISOString().substring(11, 8)
-        }
-    }
 
     flattenForQueue() {
-        let readableDuration = this.getReadableDuration()
+        let readableDuration = helper.toHHMMSS(this.duration)
         return `[${this.title}](${this.getVideoURL()}) ║ ${readableDuration}\n`
     }
 
