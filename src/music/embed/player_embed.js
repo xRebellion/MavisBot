@@ -73,7 +73,7 @@ class MusicPlayerEmbed {
         this.timer = setInterval(() => {
             this.updateProgressBar()
             this.update()
-        }, 8000)
+        }, 15000)
     }
     stopProgressBar() {
         clearInterval(this.timer)
