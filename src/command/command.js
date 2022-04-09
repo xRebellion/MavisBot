@@ -29,6 +29,8 @@ function _preprocessCmd(message) {
     } else return false
 }
 
+// TODO: use slices instead of switch case
+// use cmd[m], then separate the "instructions" to another file
 async function processCmd(message) {
     const m = _preprocessCmd(message)
     if (m) {
