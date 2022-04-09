@@ -23,7 +23,7 @@ class MusicPlayerEmbed {
             .setThumbnail("https://user-images.githubusercontent.com/32483348/133907757-37365e0f-3c97-4e0a-becb-6d57b82ce1d7.png")
         this.progressBar = helper.createProgressBar(this.audioResource.playbackDuration, this.song.duration * 1000, "░", "▓")
         let thumbnailUrl = null
-        if (!this.song.thumbnail.url) {
+        if (!this.song.thumbnail) {
             thumbnailUrl = "https://user-images.githubusercontent.com/32483348/133907757-37365e0f-3c97-4e0a-becb-6d57b82ce1d7.png"
         } else {
             thumbnailUrl = this.song.thumbnail.url
