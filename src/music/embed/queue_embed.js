@@ -49,6 +49,9 @@ class MusicQueueEmbed {
                 name: "In Queue"
             })
             .setDescription(description)
+            .setFooter({
+                text: "Now Playing: " + this.musicQueue.getNowPlaying().title
+            })
 
         return { embeds: [embed], components: [this.actionRow], fetchReply: true }
     }
