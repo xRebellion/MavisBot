@@ -77,7 +77,7 @@ class MusicQueue {
     }
 
     shift() {
-        if (this.nowPlaying && !this.songs.includes(this.nowPlaying)) {
+        if (this.nowPlaying && !this.songs.includes(this.nowPlaying)) { // TODO: remember why this is here
             this.songMap.delete(this.nowPlaying)
         } // in case of dupes, don't delete map if there are
         this.nowPlaying = this.songs.shift()
@@ -100,7 +100,7 @@ class MusicQueue {
 
     remove(position) {
         const removed = this.songs.splice(position, 1)[0]
-        if (!this.songs.includes(removed)) {
+        if (!this.songs.includes(removed)) { // TODO: remember why this is here
             this.songMap.delete(removed)
         } // in case of dupes, don't delete map if there are
         return removed
@@ -108,16 +108,16 @@ class MusicQueue {
 
     async updateDurations() {
         let q = ""
-        let i = 0
-        let j = 0
+        let i = 0 // 50 songs partition counter to query video duration in batches
+        let j = 0 // Total songs counter
         let details = []
         const songs = this.songs.slice()
         for (const id of songs) {
             let videoId = id
-            if (this.songMap.get(videoId).duration > 0) continue
-            q = q + videoId + ","
-            i++
             j++
+            if (this.songMap.get(videoId).duration > 0) continue
+            i++
+            q = q + videoId + ","
             if (i == 50 || j == this.songs.length) {
                 let response = null
                 q = q.slice(0, -1)
@@ -133,6 +133,7 @@ class MusicQueue {
                 } catch (err) {
                     return console.error(err)
                 }
+
                 details = details.concat(response.data.items)
                 q = ""
                 i = 0
@@ -140,7 +141,6 @@ class MusicQueue {
             }
 
         }
-
         for (let i = 0; i < details.length; i++) {
             const song = this.songMap.get(details[i].id)
             song.duration = helper.ptToSeconds(details[i].contentDetails.duration)

@@ -384,8 +384,7 @@ class MusicPlayer extends EventEmitter {
 
             this.audioPlayer.play(this._resource)
 
-            console.log("Current: ", this._resource)
-            await helper.delay(1000)
+            // console.log("Current: ", this._resource)
 
             this.queueLock = false
         } catch (error) {
