@@ -1,5 +1,5 @@
-const { createAudioResource } = require("@discordjs/voice")
-const playdl = require("play-dl")
+const { demuxProbe, createAudioResource } = require("@discordjs/voice")
+const ytdl = require("youtube-dl-exec").exec
 const { getInfo } = require('ytdl-core')
 const helper = require('../util/helper')
 
@@ -15,9 +15,29 @@ class Song {
     }
 
     createAudioResource() {
-        return new Promise((resolve) => {
-            playdl.stream(this.getVideoURL()).then(stream => {
-                resolve(createAudioResource(stream.stream, { metadata: this, inputType: stream.type }))
+        return new Promise((resolve, reject) => {
+            const process = ytdl(
+                this.videoId,
+                {
+                    o: '-',
+                    q: '',
+                    f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
+                },
+            )
+            if (!process.stdout) {
+                reject(new Error('No stdout'))
+                return
+            }
+            const stream = process.stdout
+            const onError = (error) => {
+                if (!process.killed) process.kill()
+                stream.resume()
+                reject(error)
+            }
+            process.once('spawn', () => {
+                demuxProbe(stream)
+                    .then((probe) => resolve(createAudioResource(probe.stream, { metadata: this, inputType: probe.type })))
+                    .catch(onError)
             })
         })
     }
